@@ -26,8 +26,10 @@ function skinr_menu() {
  * @todo placeholder settings page
  */
 function skinr_admin() {
-  drupal_set_message(t('Skinr data:'));
-  dpm(skinr_get());
+  if (module_exists('devel')) {
+    drupal_set_message(t('Skinr data:'));
+    dpm(skinr_get());
+  }
   $items = array();
   $items[] = 'Listing of blocks';
   $items[] = 'Listing of node types';
