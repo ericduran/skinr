@@ -68,9 +68,6 @@ function block_skinr_form_index_handler($op, &$form, $form_state) {
       else {
         return $form_state['values']['module'] .'-'. $form_state['values']['delta'];
       }
-
-    case 'preprocess':
-      return $a2['block']->module .'-'. $a2['block']->delta;
   }
 }
 
