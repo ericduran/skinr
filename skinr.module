@@ -27,6 +27,7 @@ function skinr_menu() {
  */
 function skinr_admin() {
   if (module_exists('devel')) {
+    drupal_set_message(t('Using theme %theme', array('%theme' => skinr_current_theme())));
     drupal_set_message(t('Skinr data:'));
     dpm(skinr_get());
   }
@@ -437,14 +438,14 @@ function skinr_handler($type, $op, $handler, &$a3, $a4 = NULL, $a5 = NULL, $a6 =
   if (is_callable($handler)) {
     switch ($type) {
       case 'preprocess_index_handler':
-        return call_user_func($handler, &$a3);
+        return $handler($a3);
       case 'preprocess_hook_callback':
-        return call_user_func($handler, &$a3, $a4);
+        return $handler($a3, $a4);
       case 'data_handler':
       case 'submit_handler':
-        return call_user_func($handler, &$a3, $a4, $a5, $a6);
+        return $handler($a3, $a4, $a5, $a6);
       default:
-        return call_user_func($handler, $op, &$a3, $a4);
+        return $handler($op, $a3, $a4);
     }
   }
 }
