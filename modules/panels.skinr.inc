@@ -401,7 +401,7 @@ function theme_panels_skinr_style_render_panel($display, $panel_id, $panes, $set
   }
 
   // Add skinr styles
-  $hook = 'panels_skinr';
+  $hook = 'panels';
   if (isset($display->panel_settings[$panel_id]['style']) && isset($display->panel_settings[$panel_id]['style']) == 'skinr') {
     // Specific style set for this panel
     $key = 'display-'. $display->did .'-panel-'. $panel_id;
@@ -423,7 +423,7 @@ function theme_panels_skinr_style_render_panel($display, $panel_id, $panes, $set
  * Render pane callback.
  */
 function theme_panels_skinr_style_render_pane($content, $pane, $display) {
-  $hook = 'panels_skinr';
+  $hook = 'panels';
   $key  = 'display-'. $pane->did .'-pane-'. $pane->pid;
 
   $style = skinr_get($hook, $key);
