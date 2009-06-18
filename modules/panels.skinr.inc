@@ -238,9 +238,11 @@ function panels_skinr_submit_handler_settings(&$form, $form_state, $module, $for
       $skinr_data = array();
       // Fetch skinr data
       $skinr = skinr_get();
-      foreach ($skinr[$module] as $skinr_key => $skinr_value) {
-        if (substr($skinr_key, 0, strlen('display-'. $form_state['display']->did)) == 'display-'. $form_state['display']->did) {
-          $skinr_data[$skinr_key] = $skinr_value;
+      if (isset($skinr[$module])) {
+        foreach ($skinr[$module] as $skinr_key => $skinr_value) {
+          if (substr($skinr_key, 0, strlen('display-'. $form_state['display']->did)) == 'display-'. $form_state['display']->did) {
+            $skinr_data[$skinr_key] = $skinr_value;
+          }
         }
       }
     }
@@ -306,8 +308,8 @@ function panels_skinr_submit_handler_display(&$form, $form_state, $module, $form
 }
 
 function _panels_skinr_save_and_clear_cache($did) {
-  if ($skinr = ctools_object_cache_get('skinr', $did)) {
-    foreach ($skinr as $key => $value) {
+  if ($skinr_data = ctools_object_cache_get('skinr', $did)) {
+    foreach ($skinr_data as $key => $value) {
       skinr_set('panels', $key, $value);
     }
     ctools_object_cache_clear('skinr', $did);

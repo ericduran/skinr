@@ -55,8 +55,23 @@ function views_skinr_data() {
 function views_skinr_form_index_handler($op, &$form, $form_state) {
   switch ($op) {
     case 'form':
+      $default = $form_state['view']->display_handler->is_defaulted('style_options');
+      if ($default) {
+        return 'view-'. $form_state['view']->name .'-display-default';
+      }
+      else {
+        return 'view-'. $form_state['view']->name .'-display-'. $form_state['view']->current_display;
+      }
+      
     case 'submit':
-      return 'view-'. $form_state['view']->name .'-display-'. $form_state['display_id'];
+      // Can't use display_handler->is_defaulted('style_options') on submit
+      $default = ($form_state['#section'] == 'default-style_options');
+      if ($default) {
+        return 'view-'. $form_state['view']->name .'-display-default';
+      }
+      else {
+        return 'view-'. $form_state['view']->name .'-display-'. $form_state['display_id'];
+      }
   }
 }
 
@@ -185,18 +200,20 @@ function views_skinr_submit_handler_display(&$form, $form_state, $module, $form_
     // Save skinr_settings for this view in cache
     views_include('cache');
 
-    if (!$skinr = views_object_cache_get('skinr', $form_state['view']->name)) {
-      $skinr = array();
+    if (!$skinr_data = views_object_cache_get('skinr', $form_state['view']->name)) {
+      $skinr_data = array();
       // Fetch skinr data
       $skinr = skinr_get();
-      foreach ($skinr[$module] as $skinr_key => $skinr_value) {
-        if (substr($skinr_key, 0, strlen('view-'. $form_state['view']->name)) == 'view-'. $form_state['view']->name) {
-          $skinr_data[$skinr_key] = $skinr_value;
+      if (isset($skinr[$module])) {
+        foreach ($skinr[$module] as $skinr_key => $skinr_value) {
+          if (substr($skinr_key, 0, strlen('view-'. $form_state['view']->name)) == 'view-'. $form_state['view']->name) {
+            $skinr_data[$skinr_key] = $skinr_value;
+          }
         }
       }
     }
-    $skinr[$key] = $value;
-    views_object_cache_set('skinr', $form_state['view']->name, $skinr);
+    $skinr_data[$key] = $value;
+    views_object_cache_set('skinr', $form_state['view']->name, $skinr_data);
   }
 }
 
@@ -206,9 +223,9 @@ function views_skinr_submit_handler_view(&$form, $form_state, $module, $form_set
       // Fetch skinr data for this view from cache
       views_include('cache');
 
-      if ($skinr = views_object_cache_get('skinr', $form_state['view']->name)) {
+      if ($skinr_data = views_object_cache_get('skinr', $form_state['view']->name)) {
         $hook = $module;
-        foreach ($skinr as $key => $value) {
+        foreach ($skinr_data as $key => $value) {
           skinr_set($hook, $key, $value);
         }
         views_object_cache_clear('skinr', $form_state['view']->name);
@@ -232,7 +249,13 @@ function views_skinr_submit_handler_view(&$form, $form_state, $module, $form_set
  *   The index where we can find our values in Skinrs data structure.
  */
 function views_skinr_preprocess_index_handler(&$vars) {
-  return 'view-'. $vars['view']->name .'-display-'. $vars['display_id'];
+  $default = $vars['view']->display_handler->is_defaulted('style_options');
+  if ($default) {
+    return 'view-'. $vars['view']->name .'-display-default';
+  }
+  else {
+    return 'view-'. $vars['view']->name .'-display-'. $vars['view']->current_display;
+  }
 }
 
 /**
