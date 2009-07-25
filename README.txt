@@ -20,7 +20,7 @@ http://www.slideshare.net/jacine/introducing-skinr-a-new-and-more-modular-approa
 **Session Video**
 http://www.youtube.com/watch?v=E5xpR9eGLRM
 
-**Sneak peak at new features & UI**
+**Sneak peak at new features & UI (Coming Soon!)**
 http://jacine.net/demo/skinr-ui.html
 
 
