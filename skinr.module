@@ -335,6 +335,24 @@ function skinr_current_theme() {
 }
 
 /**
+ * Retrieves all the Skinr skins from theme parents.  Theme skins 
+ * will override any skins of the same name from its parents.
+ */
+function skinr_inherited_skins($theme, $themes) {
+  $all_skins = $skins = array();
+  $base_theme = (!empty($themes[$theme]->info['base theme'])) ? $themes[$theme]->info['base theme'] : '';
+  while ($base_theme) {
+    $all_skins[] = (!empty($themes[$base_theme]->info['skinr'])) ? (array)$themes[$base_theme]->info['skinr'] : array();
+    $base_theme = (!empty($themes[$base_theme]->info['base theme'])) ? $themes[$base_theme]->info['base theme'] : '';
+  }
+  array_reverse($all_skins);
+  foreach ($all_skins as $new_skin) {
+    $skins = array_merge($skins, $new_skin);
+  }
+  return $skins;
+}
+
+/**
  * Themes are allowed to set Skinr styles in their .info files.
  *
  * @todo Do we want to allow manual addition of styles?
@@ -347,12 +365,22 @@ function skinr_get_skins($hook) {
     $current_theme = skinr_current_theme();
     $themes = system_theme_data();
 
+    $skinr_skins = (array)$themes[$current_theme]->info['skinr'];
+    
+    $options = $skinr_skins['options'];
+    unset($skinr_skins['options']);
+
+    // Inherit skins from theme parents, if inherit_skins set to true
+    if (!empty($options['inherit_skins'])) {
+      $skinr_skins = array_merge(skinr_inherited_skins($current_theme, $themes), $skinr_skins);
+    }
+
     $cache = array('all' => array());
-    foreach ((array) $themes[$current_theme]->info['skinr'] as $id => $skin) {
+    foreach ((array)$skinr_skins as $id => $skin) {
       if (!isset($skin['features'])) {
         $skin['features'] = array('*');
       }
-      foreach ($skin['features'] as $feature) {
+      foreach ((array)$skin['features'] as $feature) {
         // Global skins
         if ($feature == '*') {
           $feature = 'all';
