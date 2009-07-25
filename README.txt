@@ -7,6 +7,23 @@ Skinr's main purpose is to allow the theme to define a set of reusable and modul
 * [Panel](http://drupal.org/project/panels) Panes
 * [Views](http://drupal.org/project/views) Displays
 
+##Help
+
+More documentation and screen casts are in the works. In the meantime, if you are looking for some direction on Skinr, check out the session we did at Design 4 Drupal Boston Camp on June 13th.
+
+**About the Session**
+http://boston.design4drupal.org/session/introducing-skinr-new-and-more-modular-approach-theming-drupal
+
+**Session Slides**
+http://www.slideshare.net/jacine/introducing-skinr-a-new-and-more-modular-approach-to-theming-drupal
+
+**Session Video**
+http://www.youtube.com/watch?v=E5xpR9eGLRM
+
+**Sneak peak at new features & UI**
+http://jacine.net/demo/skinr-ui.html
+
+
 ##Basic Syntax
 
 This is the bare minimum that is required in a .info file to create a style.
@@ -44,6 +61,12 @@ skinr[menu-style][1][label] = Menu Style: White on Black
 skinr[menu-style][1][class] = menu-style menu-white-black
 skinr[menu-style][2][label] = Menu Style: Black on White
 skinr[menu-style][2][class] = menu-style menu-black-white
+
+#Inheriting Skinr styles from a base theme
+
+If you are creating a subtheme and the base theme you are using contains it's own skinr styles, Skinr allows you to choose whether or not you want your subtheme to inherit those skins or not.  By default Skinr will NOT inherit skins.  If you want to be able to use a base theme's skins, you will need to add this line to your .info file.
+
+skinr[inherit_styles] = true
 
 ###Selectively restricting styles to de-clutter the UI
 
