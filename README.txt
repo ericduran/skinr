@@ -66,7 +66,7 @@ skinr[menu-style][2][class] = menu-style menu-black-white
 
 If you are creating a subtheme and the base theme you are using contains it's own skinr styles, Skinr allows you to choose whether or not you want your subtheme to inherit those skins or not.  By default Skinr will NOT inherit skins.  If you want to be able to use a base theme's skins, you will need to add this line to your .info file.
 
-skinr[inherit_styles] = true
+skinr[options][inherit_skins] = true
 
 ###Selectively restricting styles to de-clutter the UI
 
