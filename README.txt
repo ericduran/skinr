@@ -75,7 +75,7 @@ By default Skinr will assume that your styles can be used anywhere Skinr is avai
 skinr[system_name][features][] = block
 skinr[system_name][features][] = panel-pane
 skinr[system_name][features][] = node
-skinr[system_name][features][] = comment
+skinr[system_name][features][] = comment-wrapper
 skinr[system_name][features][] = view
 
 Example Use Case: Your style only includes CSS for menus.  You know that Drupal only outputs menus through blocks and panel panes, so you don't want see the style in the Skinr options in Views or Node Types. The syntax for this would be:
