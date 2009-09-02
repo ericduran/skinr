@@ -52,7 +52,9 @@ function comment_skinr_form_index_handler($op, &$form, &$form_state) {
     case 'submit':
       // Clear old variable before we set a new one if the node type has changed
       if ($form_state['values']['old_type'] != $form_state['values']['type']) {
-        skinr_set('comment', $form_state['values']['old_type'], '');
+      	foreach ($form_state['values']['skinr_settings']['comment_group'] as $theme_name => $theme_data) {
+					skinr_set($theme_name, 'comment', $form_state['values']['old_type'], '');
+      	}
       }
 
       return $form_state['values']['type'];

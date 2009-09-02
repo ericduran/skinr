@@ -143,7 +143,7 @@ function views_skinr_access_handler_view($op, &$form, $form_state) {
  * @return
  *   TRUE if we get access, FALSE if we don't.
  */
-function views_skinr_data_handler(&$form, $form_state, $module, $form_settings) {
+function views_skinr_data_handler(&$form, $form_state, $theme, $module, $form_settings) {
   // Ensure we have the required index_handler
   if (empty($form_settings['index_handler'])) {
     trigger_error(sprintf("No index_handler was found for form_id '%s' in module '%s'.", $form_id, $module), E_USER_ERROR);
@@ -154,8 +154,8 @@ function views_skinr_data_handler(&$form, $form_state, $module, $form_settings) 
   views_include('cache');
 
   if ($skinr_data = views_object_cache_get('skinr', $form_state['view']->name)) {
-    if (isset($skinr_data[$index])) {
-      return $skinr_data[$index];
+    if (isset($skinr_data[$theme][$index])) {
+      return $skinr_data[$theme][$index];
     }
     else {
       return array();
@@ -163,7 +163,7 @@ function views_skinr_data_handler(&$form, $form_state, $module, $form_settings) 
   }
 
   // No data exists in cache, so let's grab it from the regular source
-  return skinr_get($module, $index);
+  return skinr_get($theme, $module, $index);
 }
 
 /**
@@ -181,39 +181,54 @@ function views_skinr_data_handler(&$form, $form_state, $module, $form_settings) 
  *   TRUE if we get access, FALSE if we don't.
  */
 function views_skinr_submit_handler_display(&$form, $form_state, $module, $form_settings) {
-  if (isset($form_state['values']['skinr_'. $module]) || isset($form_state['values']['skinr_'. $module .'_additional'])) {
-    $hook  = $module;
-    $key   = skinr_handler('form_index_handler', 'submit', $form_settings['index_handler'], $form, $form_state);
-    $value = _skinr_array_strip_empty($form_state['values']['skinr_'. $module]);
-    if (isset($form_state['values']['skinr_'. $module .'_additional'])) {
-      $form_state['values']['skinr_'. $module .'_additional'] = trim($form_state['values']['skinr_'. $module .'_additional']);
-      if (!empty($form_state['values']['skinr_'. $module .'_additional'])) {
-        $value['_additional'] = trim($form_state['values']['skinr_'. $module .'_additional']);
+  foreach ($form_state['values']['skinr_settings'][$module .'_group'] as $theme_name => $theme) {
+    if ((isset($theme['widgets']) && count($theme['widgets'])) || isset($theme['advanced']['_additional'])) {
+      $hook  = $module;
+      $key   = skinr_handler('form_index_handler', 'submit', $form_settings['index_handler'], $form, $form_state);
+      $value = array();
+
+      if (is_array($theme['widgets'])) {
+        foreach ($theme['widgets'] as $skin_id => $skin_value) {
+          $value[$skin_id] = is_array($skin_value) ? _skinr_array_strip_empty($skin_value) : $skin_value;
+        }
       }
-    }
 
-    if (empty($key)) {
-      // We didn't receive a valid key, so raise an error
-      drupal_set_message(t("Skinr settings weren't saved due to an error."), 'error');
-    }
+      if (isset($theme['advanced']['_additional'])) {
+        $theme['advanced']['_additional'] = trim($theme['advanced']['_additional']);
+        if (!empty($theme['advanced']['_additional'])) {
+          $value['_additional'] = $theme['advanced']['_additional'];
+        }
+      }
 
-    // Save skinr_settings for this view in cache
-    views_include('cache');
-
-    if (!$skinr_data = views_object_cache_get('skinr', $form_state['view']->name)) {
-      $skinr_data = array();
-      // Fetch skinr data
-      $skinr = skinr_get();
-      if (isset($skinr[$module])) {
-        foreach ($skinr[$module] as $skinr_key => $skinr_value) {
-          if (substr($skinr_key, 0, strlen('view-'. $form_state['view']->name)) == 'view-'. $form_state['view']->name) {
-            $skinr_data[$skinr_key] = $skinr_value;
+      if (isset($theme['advanced']['_template'])) {
+        $theme['advanced']['_template'] = trim($theme['advanced']['_template']);
+        if (!empty($theme['advanced']['_template'])) {
+          $value['_template'] = $theme['advanced']['_template'];
+        }
+      }
+  
+      if (empty($key)) {
+        // We didn't receive a valid key, so raise an error
+        drupal_set_message(t("Skinr settings weren't saved due to an error."), 'error');
+      }
+  
+      // Save skinr_settings for this view in cache
+      views_include('cache');
+      if (!$skinr_data = views_object_cache_get('skinr', $form_state['view']->name, TRUE)) {
+        $skinr_data = array();
+        // Fetch skinr data
+        $skinr = skinr_get($theme_name);
+        if (isset($skinr[$module])) {
+          foreach ($skinr[$module] as $skinr_key => $skinr_value) {
+            if (substr($skinr_key, 0, strlen('view-'. $form_state['view']->name)) == 'view-'. $form_state['view']->name) {
+              $skinr_data[$theme_name][$skinr_key] = $skinr_value;
+            }
           }
         }
       }
+      $skinr_data[$theme_name][$key] = $value;
+      views_object_cache_set('skinr', $form_state['view']->name, $skinr_data);
     }
-    $skinr_data[$key] = $value;
-    views_object_cache_set('skinr', $form_state['view']->name, $skinr_data);
   }
 }
 
@@ -223,10 +238,12 @@ function views_skinr_submit_handler_view(&$form, $form_state, $module, $form_set
       // Fetch skinr data for this view from cache
       views_include('cache');
 
-      if ($skinr_data = views_object_cache_get('skinr', $form_state['view']->name)) {
+      if ($skinr_data = views_object_cache_get('skinr', $form_state['view']->name, TRUE)) {
         $hook = $module;
-        foreach ($skinr_data as $key => $value) {
-          skinr_set($hook, $key, $value);
+        foreach ($skinr_data as $theme_name => $theme) {
+          foreach ($theme as $key => $value) {
+            skinr_set($theme_name, $hook, $key, $value);
+          }
         }
         views_object_cache_clear('skinr', $form_state['view']->name);
       }

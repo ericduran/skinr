@@ -43,14 +43,14 @@ function skinr_access_handler($op, &$form, $form_state) {
  * @return
  *   TRUE if we get access, FALSE if we don't.
  */
-function skinr_data_handler(&$form, $form_state, $module, $form_settings) {
+function skinr_data_handler(&$form, $form_state, $theme, $module, $form_settings) {
   // Ensure we have the required index_handler
   if (empty($form_settings['index_handler'])) {
     trigger_error(sprintf("No index_handler was found for form_id '%s' in module '%s'.", $form_id, $module), E_USER_ERROR);
   }
   $index = skinr_handler('form_index_handler', 'form', $form_settings['index_handler'], $form, $form_state);
 
-  return skinr_get($module, $index);
+  return skinr_get($theme, $module, $index);
 }
 
 /**
@@ -69,23 +69,39 @@ function skinr_data_handler(&$form, $form_state, $module, $form_settings) {
  *   TRUE if we get access, FALSE if we don't.
  */
 function skinr_submit_handler(&$form, $form_state, $module, $form_settings) {
-  if (isset($form_state['values']['skinr_'. $module]) || isset($form_state['values']['skinr_'. $module .'_additional'])) {
-    $hook  = $module;
-    $key   = skinr_handler('form_index_handler', 'submit', $form_settings['index_handler'], $form, $form_state);
-    $value = _skinr_array_strip_empty($form_state['values']['skinr_'. $module]);
-    if (isset($form_state['values']['skinr_'. $module .'_additional'])) {
-      $form_state['values']['skinr_'. $module .'_additional'] = trim($form_state['values']['skinr_'. $module .'_additional']);
-      if (!empty($form_state['values']['skinr_'. $module .'_additional'])) {
-        $value['_additional'] = trim($form_state['values']['skinr_'. $module .'_additional']);
+  foreach ($form_state['values']['skinr_settings'][$module .'_group'] as $theme_name => $theme) {
+    if ((isset($theme['widgets']) && count($theme['widgets'])) || isset($theme['advanced']['_additional'])) {
+      $hook  = $module;
+      $key   = skinr_handler('form_index_handler', 'submit', $form_settings['index_handler'], $form, $form_state);
+      $value = array();
+
+      if (is_array($theme['widgets'])) {
+        foreach ($theme['widgets'] as $skin_id => $skin_value) {
+          $value[$skin_id] = is_array($skin_value) ? _skinr_array_strip_empty($skin_value) : $skin_value;
+        }
       }
-    }
 
-    if (empty($key)) {
-      // We didn't receive a valid key, so raise an error
-      drupal_set_message(t("Skinr settings weren't saved due to an error."), 'error');
-    }
+      if (isset($theme['advanced']['_additional'])) {
+        $theme['advanced']['_additional'] = trim($theme['advanced']['_additional']);
+        if (!empty($theme['advanced']['_additional'])) {
+          $value['_additional'] = $theme['advanced']['_additional'];
+        }
+      }
 
-    skinr_set($hook, $key, $value);
+      if (isset($theme['advanced']['_template'])) {
+        $theme['advanced']['_template'] = trim($theme['advanced']['_template']);
+        if (!empty($theme['advanced']['_template'])) {
+          $value['_template'] = $theme['advanced']['_template'];
+        }
+      }
+
+      if (empty($key)) {
+        // We didn't receive a valid key, so raise an error
+        drupal_set_message(t("Skinr settings weren't saved due to an error."), 'error');
+      }
+
+      skinr_set($theme_name, $hook, $key, $value);
+    }
   }
 }
 
