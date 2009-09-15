@@ -16,7 +16,7 @@ function skinr_menu() {
     'title' => 'Skinr',
     'page callback' => 'skinr_admin',
     // 'page arguments' => array('skinr_admin_settings'),
-    'type' => MENU_NORMAL_ITEM,
+    'type' => MENU_CALLBACK,
     'access arguments' => array('administer skinr')
   );
   return $items;
@@ -135,7 +135,7 @@ function skinr_form_alter(&$form, $form_state, $form_id) {
           $form['skinr_settings'][$module .'_group'] = array(
             '#type' => 'fieldset',
             '#title' => $form_settings['skinr_title'] .': '. $form_settings['title'],
-            '#description' => $form_settings['description'] ."<br />\n". t('Hook') .': ['. $module .']',
+            '#description' => $form_settings['description'] .' <strong>'. $preprocess_hook .'</strong>.',
             '#weight' => $form_settings['weight'],
             '#collapsible' => TRUE,
             '#collapsed' => $form_settings['collapsed'],
@@ -176,7 +176,7 @@ function skinr_form_alter(&$form, $form_state, $form_id) {
               $form['skinr_settings'][$module .'_group'][$theme->name]['widgets'][$skin_id] = array(
                 '#type' => 'radios',
                 '#title' => $skin['title'],
-                '#options' => array_merge(array('' => '<none>'), skinr_info_options_to_form_options($skin['options'])),
+                '#options' => array_merge(array('' => '&lt;none&gt;'), skinr_info_options_to_form_options($skin['options'])),
                 '#default_value' => isset($defaults[$skin_id]) ? $defaults[$skin_id] : '',
                 '#description' => $skin['description'],
               );
@@ -215,7 +215,7 @@ function skinr_form_alter(&$form, $form_state, $form_id) {
             '#title' => t('Template file'),
             '#options' => array_merge(array('' => 'Default'), $templates),
             '#default_value' => $template_default,
-            '#description' => t('Optionally, select a template file to associate with this hook [!hook]. Selecting "Default" will let Drupal handle this.', array('!hook' => $module)),
+            '#description' => t('Optionally, select a template file to associate with this <strong>!hook</strong>. Selecting "Default" will let Drupal handle this.', array('!hook' => $preprocess_hook)),
           );
   
           // Only add validation handler once
@@ -303,10 +303,13 @@ function skinr_preprocess(&$vars, $hook) {
 
         foreach ($style as $skin => $classes) {
           // Add custom CSS files
-          if (isset($info[$current_theme]['skins'][$skin]['stylesheets'])) {
+          if (!empty($info[$current_theme]['skins'][$skin]['stylesheets'])) {
             foreach ($info[$current_theme]['skins'][$skin]['stylesheets'] as $media => $stylesheets) {
               foreach ($stylesheets as $stylesheet) {
-                drupal_add_css($stylesheet, 'theme', $media);
+                $stylesheet = drupal_get_path('theme', $current_theme) .'/'. $stylesheet;
+                if (file_exists($stylesheet)) {
+                  drupal_add_css($stylesheet, 'theme', $media);
+                }
               }
             }
           }
@@ -314,7 +317,10 @@ function skinr_preprocess(&$vars, $hook) {
           // Add custom JS files
           if (isset($info[$current_theme]['skins'][$skin]['scripts'])) {
             foreach ($info[$current_theme]['skins'][$skin]['scripts'] as $script) {
-              drupal_add_js($script, 'theme');
+              $script = drupal_get_path('theme', $current_theme) .'/'. $script;
+              if (file_exists($script)) {
+                drupal_add_js($script, 'theme');
+              }
             }
           }
         }
@@ -399,22 +405,22 @@ function skinr_get_module_apis() {
 /**
  * Save an entry to Skinr
  */
-function skinr_set($theme, $hook, $key, $value) {
+function skinr_set($theme, $module, $key, $value) {
   $skinr = variable_get('skinr_'. $theme, array());
 
   // Make sure we're getting valid data
-  if (empty($hook) || empty($key)) {
+  if (empty($module) || empty($key)) {
     return;
   }
 
-  if (!$value && isset($skinr[$hook][$key])) {
-    unset($skinr[$hook][$key]);
+  if (!$value && isset($skinr[$module][$key])) {
+    unset($skinr[$module][$key]);
   }
   else {
-    if (!isset($skinr[$hook])) {
-      $skinr[$hook] = array();
+    if (!isset($skinr[$module])) {
+      $skinr[$module] = array();
     }
-    $skinr[$hook][$key] = $value;
+    $skinr[$module][$key] = $value;
   }
 
   variable_set('skinr_'. $theme, $skinr);
@@ -427,19 +433,19 @@ function skinr_set($theme, $hook, $key, $value) {
  *
  * @todo Account for admin theme
  */
-function skinr_get($theme = NULL, $hook = NULL, $key = NULL) {
+function skinr_get($theme = NULL, $module = NULL, $key = NULL) {
   if (is_null($theme)) {
     $theme = skinr_current_theme();
   }
   $skinr = variable_get('skinr_'. $theme, array());
 
-  if (is_null($hook) || is_null($key)) {
+  if (is_null($module) || is_null($key)) {
     return $skinr;
   }
-  elseif (isset($skinr[$hook][$key])) {
+  elseif (isset($skinr[$module][$key])) {
     //dpm($theme.':'.$hook.':'.$key);
     //dpm($skinr);
-    return $skinr[$hook][$key];
+    return $skinr[$module][$key];
   }
   else {
     return array();
@@ -586,7 +592,7 @@ function _skinr_fetch_data_defaults($setting) {
         'skinr_title' => t('Skinr'),
         'skinr_weight' => 1,
         'title' => '',
-        'description' => t('Manage which skins you want to apply to this hook.'),
+        'description' => t('Manage which skins you want to apply to this'),
         'collapsed' => TRUE,
         'weight' => 0,
       );
