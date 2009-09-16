@@ -234,7 +234,7 @@ function views_skinr_submit_handler_display(&$form, $form_state, $module, $form_
 
 function views_skinr_submit_handler_view(&$form, $form_state, $module, $form_settings) {
   switch ($form_state['values']['op']) {
-    case 'Save':
+    case t('Save'):
       // Fetch skinr data for this view from cache
       views_include('cache');
 
@@ -248,7 +248,7 @@ function views_skinr_submit_handler_view(&$form, $form_state, $module, $form_set
         views_object_cache_clear('skinr', $form_state['view']->name);
       }
       break;
-    case 'Cancel':
+    case t('Cancel'):
       // Remove our data from views cache
       views_include('cache');
 

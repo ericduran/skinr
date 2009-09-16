@@ -254,7 +254,7 @@ function panels_skinr_submit_handler_display(&$form, $form_state, $module, $form
   // Include ctools' object cache files
   ctools_include('object-cache');
 
-  if ($form_state['values']['op'] == 'Save') {
+  if ($form_state['values']['op'] == t('Save')) {
     switch ($form_id) {
       case 'page_manager_save_page_form':
         // Panel page
@@ -267,7 +267,7 @@ function panels_skinr_submit_handler_display(&$form, $form_state, $module, $form
         break;
     }
   }
-  elseif ($form_state['values']['op'] == 'Cancel') {
+  elseif ($form_state['values']['op'] == t('Cancel')) {
     switch ($form_id) {
       case 'page_manager_save_page_form':
         // Panel page
