@@ -497,7 +497,7 @@ function skinr_process_info_files() {
   static $cache = NULL;
 
   if (!isset($cache)) {
-    $themes = system_theme_data();
+    $themes = _system_theme_data();
 
     foreach ($themes as $theme) {
       $cache[$theme->name] = array(
