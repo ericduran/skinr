@@ -505,30 +505,34 @@ function skinr_process_info_files() {
         'skins' => array(),
       );
 
-      $info = (array)$theme->info['skinr'];
-
-      // Store skinr options
-      $cache[$theme->name]['options'] = $info['options'];
-      unset($info['options']);
-
-      // Inherit skins from parent theme, if inherit_skins is set to true
-      if (!empty($cache[$theme->name]['options']['inherit_skins'])) {
-        $info = array_merge(skinr_inherited_skins($theme->name, $themes), $info);
-      }
-
-      foreach ($info as $id => $skin) {
-        $processed_skin = array(
-          'title' => isset($skin['title']) ? $skin['title'] : '',
-          'type' => isset($skin['type']) ? $skin['type'] : 'checkboxes',
-          'description' => isset($skin['description']) ? $skin['description'] : '',
-          'features' => isset($skin['features']) ? $skin['features'] : array('*'),
-          'templates' => isset($skin['templates']) ? $skin['templates'] : array(),
-          'options' => isset($skin['options']) ? $skin['options'] : array(),
-          'stylesheets' => isset($skin['stylesheets']) ? $skin['stylesheets'] : array(),
-          'scripts' => isset($skin['scripts']) ? $skin['scripts'] : array(),
-        );
-
-        $cache[$theme->name]['skins'][$id] = $processed_skin;
+      if (!empty($theme->info['skinr'])) {
+        $info = (array)$theme->info['skinr'];
+  
+        // Store skinr options
+        if (!empty($info['options'])) {
+          $cache[$theme->name]['options'] = $info['options'];
+          unset($info['options']);
+        }
+  
+        // Inherit skins from parent theme, if inherit_skins is set to true
+        if (!empty($cache[$theme->name]['options']['inherit_skins'])) {
+          $info = array_merge(skinr_inherited_skins($theme->name, $themes), $info);
+        }
+  
+        foreach ($info as $id => $skin) {
+          $processed_skin = array(
+            'title' => isset($skin['title']) ? $skin['title'] : '',
+            'type' => isset($skin['type']) ? $skin['type'] : 'checkboxes',
+            'description' => isset($skin['description']) ? $skin['description'] : '',
+            'features' => isset($skin['features']) ? $skin['features'] : array('*'),
+            'templates' => isset($skin['templates']) ? $skin['templates'] : array(),
+            'options' => isset($skin['options']) ? $skin['options'] : array(),
+            'stylesheets' => isset($skin['stylesheets']) ? $skin['stylesheets'] : array(),
+            'scripts' => isset($skin['scripts']) ? $skin['scripts'] : array(),
+          );
+  
+          $cache[$theme->name]['skins'][$id] = $processed_skin;
+        }
       }
     }
   }
