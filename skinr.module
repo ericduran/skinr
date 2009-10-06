@@ -344,10 +344,12 @@ function skinr_style_array_to_string($style) {
   foreach ($style as $entry) {
     if (is_array($entry)) {
       foreach ($entry as $subentry) {
-        $return[] = $subentry;
+        if (!empty($subentry)) {
+          $return[] = $subentry;
+        }
       }
     }
-    else {
+    elseif (!empty($entry)) {
       $return[] = $entry;
     }
   }

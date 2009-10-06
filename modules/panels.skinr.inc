@@ -389,7 +389,7 @@ function theme_panels_skinr_style_render_panel($display, $panel_id, $panes, $set
     // No specific style set, so use the display's style
     $key = 'display-'. $display->did;
   }
-  $style = implode(' ', skinr_get(NULL, $hook, $key));
+  $style = skinr_style_array_to_string(skinr_get(NULL, $hook, $key));
 
   if (!empty($style)) {
     $output = '<div class="'. $style .'">'. $output .'</div>';
@@ -406,7 +406,7 @@ function theme_panels_skinr_style_render_pane($content, $pane, $display) {
   $key  = 'display-'. $pane->did .'-pane-'. $pane->pid;
 
   $style = skinr_get(NULL, $hook, $key);
-  $content->css_class .= implode(' ', $style);
+  $content->css_class .= skinr_style_array_to_string($style);
 
   $output = theme('panels_pane', $content, $pane, $display);
 
