@@ -18,15 +18,15 @@ function block_skinr_data() {
   $data['block']['form']['block_admin_configure'] = array(
     'index_handler' => 'block_skinr_form_index_handler',
     'preprocess_hook' => 'block',
-    'title' => t('Block settings'),
-    'skinr_weight' => -10,
+    'title' => t('block settings'),
+    'skinr_weight' => 0,
     'collapsed' => FALSE,
   );
   $data['block']['form']['block_add_block_form'] = array(
     'index_handler' => 'block_skinr_form_index_handler',
     'preprocess_hook' => 'block',
-    'title' => t('Block settings'),
-    'skinr_weight' => -10,
+    'title' => t('block settings'),
+    'skinr_weight' => 0,
     'collapsed' => FALSE,
   );
   $data['block']['preprocess']['block'] = array(

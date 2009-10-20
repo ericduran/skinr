@@ -18,7 +18,7 @@ function comment_skinr_data() {
   $data['comment']['form']['node_type_form'] = array(
     'index_handler' => 'comment_skinr_form_index_handler',
     'preprocess_hook' => 'comment_wrapper',
-    'title' => t('Comment settings'),
+    'title' => t('comment settings'),
     'weight' => 1,
   );
   $data['comment']['preprocess']['comment_wrapper'] = array(
@@ -52,12 +52,11 @@ function comment_skinr_form_index_handler($op, &$form, &$form_state) {
     case 'submit':
       // Clear old variable before we set a new one if the node type has changed
       if ($form_state['values']['old_type'] != $form_state['values']['type']) {
-      	foreach ($form_state['values']['skinr_settings']['comment_group'] as $theme_name => $theme_data) {
-					skinr_set($theme_name, 'comment', $form_state['values']['old_type'], '');
-      	}
+        foreach ($form_state['values']['skinr_settings']['comment_group'] as $theme_name => $theme_data) {
+          skinr_set($theme_name, 'comment', $form_state['values']['old_type'], '');
+        }
       }
-
-      return $form_state['values']['type'];
+    return $form_state['values']['type'];
   }
 }
 

@@ -18,7 +18,7 @@ function node_skinr_data() {
   $data['node']['form']['node_type_form'] = array(
     'index_handler' => 'node_skinr_form_index_handler',
     'preprocess_hook' => 'node',
-    'title' => t('Node settings'),
+    'title' => t('node settings'),
   );
   $data['node']['preprocess']['node'] = array(
     'index_handler' => 'node_skinr_preprocess_index_handler',
@@ -51,12 +51,11 @@ function node_skinr_form_index_handler($op, &$form, $form_state) {
     case 'submit':
       // Clear old variable before we set a new one if the node type has changed
       if ($form_state['values']['old_type'] != $form_state['values']['type']) {
-      	foreach ($form_state['values']['skinr_settings']['node_group'] as $theme_name => $theme_data) {
-					skinr_set($theme_name, 'comment', $form_state['values']['old_type'], '');
-      	}
+        foreach ($form_state['values']['skinr_settings']['node_group'] as $theme_name => $theme_data) {
+          skinr_set($theme_name, 'comment', $form_state['values']['old_type'], '');
+        }
       }
-
-      return $form_state['values']['type'];
+    return $form_state['values']['type'];
   }
 }
 
