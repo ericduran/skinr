@@ -361,6 +361,7 @@ function skinr_panels_styles() {
       'title'              => t('Skinr'),
       'description'        => t('Allows you to apply Skinr skins.'),
       'render panel'       => 'panels_skinr_style_render_panel',
+      'render pane'        => 'panels_skinr_style_render_pane',
       'settings form'      => 'panels_skinr_style_settings_form',
       'pane settings form' => 'panels_skinr_style_settings_form',
     ),
@@ -416,6 +417,13 @@ function theme_panels_skinr_style_render_panel($display, $panel_id, $panes, $set
   }
 
   return $output;
+}
+
+/**
+ * Render pane callback.
+ */
+function theme_panels_skinr_style_render_pane($content, $pane, $display) {
+  return theme('panels_pane', $content, $pane, $display);
 }
 
 /**
