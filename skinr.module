@@ -270,13 +270,15 @@ function skinr_form_submit(&$form, &$form_state) {
 }
 
 /**
- * Implementation of hook_preprocess();
+ * Implementation of hook_preprocess().
  */
 function skinr_preprocess(&$vars, $hook) {
   $skinr_data = skinr_fetch_data();
   $info = skinr_process_info_files();
   $current_theme = skinr_current_theme();
   $theme_registry = theme_get_registry();
+
+  $themes = array($current_theme);
 
   $original_hook = $hook;
   if (isset($theme_registry[$hook]['original hook'])) {
@@ -296,10 +298,7 @@ function skinr_preprocess(&$vars, $hook) {
           if (!empty($info[$current_theme]['skins'][$skin]['stylesheets'])) {
             foreach ($info[$current_theme]['skins'][$skin]['stylesheets'] as $media => $stylesheets) {
               foreach ($stylesheets as $stylesheet) {
-                $stylesheet = drupal_get_path('theme', $current_theme) .'/'. $stylesheet;
-                if (file_exists($stylesheet)) {
-                  drupal_add_css($stylesheet, 'theme', $media);
-                }
+                _skinr_add_file($stylesheet, $themes, 'css');
               }
             }
           }
@@ -307,10 +306,7 @@ function skinr_preprocess(&$vars, $hook) {
           // Add custom JS files
           if (isset($info[$current_theme]['skins'][$skin]['scripts'])) {
             foreach ($info[$current_theme]['skins'][$skin]['scripts'] as $script) {
-              $script = drupal_get_path('theme', $current_theme) .'/'. $script;
-              if (file_exists($script)) {
-                drupal_add_js($script, 'theme');
-              }
+              _skinr_add_file($script, $themes, 'js');
             }
           }
         }
@@ -322,6 +318,31 @@ function skinr_preprocess(&$vars, $hook) {
 
         $vars['skinr'] = skinr_style_array_to_string($style);
       }
+    }
+  }
+}
+
+/**
+ * Helper fuction to add CSS and JS files.
+ *
+ * The function checks an array of paths for the existence of the file to account for base themes.
+ */
+function _skinr_add_file($filename, $themes, $type) {
+  if (!is_array($themes)) {
+    $themes = array($themes);
+  }
+  
+  foreach ($themes as $theme) {
+    $filename = drupal_get_path('theme', $theme) .'/'. $filename;
+    dpm($filename);
+    if (file_exists($filename)) {
+      if ($type == 'css') {
+        drupal_add_css($filename, 'theme', $media);
+      }
+      else {
+        drupal_add_js($filename, 'theme');
+      }
+      break;
     }
   }
 }
