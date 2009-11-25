@@ -334,7 +334,6 @@ function _skinr_add_file($filename, $themes, $type) {
   
   foreach ($themes as $theme) {
     $filename = drupal_get_path('theme', $theme) .'/'. $filename;
-    dpm($filename);
     if (file_exists($filename)) {
       if ($type == 'css') {
         drupal_add_css($filename, 'theme', $media);
