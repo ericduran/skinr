@@ -75,7 +75,7 @@ function skinr_submit_handler(&$form, $form_state, $module, $form_settings) {
       $key   = skinr_handler('form_index_handler', 'submit', $form_settings['index_handler'], $form, $form_state);
       $value = array();
 
-      if (is_array($theme['widgets'])) {
+      if (isset($theme['widgets']) && is_array($theme['widgets'])) {
         foreach ($theme['widgets'] as $skin_id => $skin_value) {
           $value[$skin_id] = is_array($skin_value) ? _skinr_array_strip_empty($skin_value) : $skin_value;
         }
