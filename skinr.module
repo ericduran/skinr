@@ -298,7 +298,7 @@ function skinr_preprocess(&$vars, $hook) {
           if (!empty($info[$current_theme]['skins'][$skin]['stylesheets'])) {
             foreach ($info[$current_theme]['skins'][$skin]['stylesheets'] as $media => $stylesheets) {
               foreach ($stylesheets as $stylesheet) {
-                _skinr_add_file($stylesheet, $themes, 'css');
+                _skinr_add_file($stylesheet, $themes, 'css', $media);
               }
             }
           }
@@ -327,7 +327,7 @@ function skinr_preprocess(&$vars, $hook) {
  *
  * The function checks an array of paths for the existence of the file to account for base themes.
  */
-function _skinr_add_file($filename, $themes, $type) {
+function _skinr_add_file($filename, $themes, $type, $media = NULL) {
   if (!is_array($themes)) {
     $themes = array($themes);
   }
