@@ -135,7 +135,7 @@ function skinr_form_alter(&$form, $form_state, $form_id) {
         $template_options = array();
         foreach ($info[$theme->name]['skins'] as $skin_id => $skin) {
           // Check if this skin applies to this hook.
-          if (!in_array('*', $skin['features']) && !in_array($preprocess_hook, $skin['features'])) {
+          if (!is_array($skin['features']) || (!in_array('*', $skin['features']) && !in_array($preprocess_hook, $skin['features']))) {
             continue;
           }
 
