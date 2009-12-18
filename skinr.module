@@ -463,7 +463,7 @@ function skinr_get($theme = NULL, $module = NULL, $key = NULL) {
 function skinr_current_theme() {
   global $user;
 
-  if ($user->theme) {
+  if (!empty($user->theme)) {
     $current_theme = $user->theme;
   }
   else {
