@@ -261,18 +261,18 @@ function views_skinr_submit_handler_view(&$form, $form_state, $module, $form_set
 /**
  * Skinr preprocess index handler.
  *
- * @param &$vars
- *   Passes in the $vars parameter from module_preprocess().
+ * @param &$variables
+ *   Passes in the $variables parameter from module_preprocess().
  * @return
  *   The index where we can find our values in Skinrs data structure.
  */
-function views_skinr_preprocess_index_handler(&$vars) {
-  $default = $vars['view']->display_handler->is_defaulted('style_options');
+function views_skinr_preprocess_index_handler(&$variables) {
+  $default = $variables['view']->display_handler->is_defaulted('style_options');
   if ($default) {
-    return 'view-'. $vars['view']->name .'-display-default';
+    return 'view-'. $variables['view']->name .'-display-default';
   }
   else {
-    return 'view-'. $vars['view']->name .'-display-'. $vars['view']->current_display;
+    return 'view-'. $variables['view']->name .'-display-'. $variables['view']->current_display;
   }
 }
 

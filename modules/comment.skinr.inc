@@ -21,8 +21,16 @@ function comment_skinr_data() {
     'title' => t('comment settings'),
     'weight' => 1,
   );
+  $data['comment']['form']['skinr_form'] = array(
+    'preprocess_hook' => 'comment_wrapper',
+    'title' => t('comment settings'),
+    'collapsed' => FALSE,
+  );
   $data['comment']['preprocess']['comment_wrapper'] = array(
     'index_handler' => 'comment_skinr_preprocess_index_handler',
+  );
+  $data['comment']['contextual_links']['comment_wrapper'] = array(
+    'contextual_links_handler' => 'comment_skinr_contextual_links',
   );
 
   return $data;
@@ -63,13 +71,33 @@ function comment_skinr_form_index_handler($op, &$form, &$form_state) {
 /**
  * Skinr preprocess index handler.
  *
- * @param &$vars
- *   Passes in the $vars parameter from module_preprocess().
+ * @param &$variables
+ *   Passes in the $variables parameter from skinr_preprocess().
  * @return
  *   The index where we can find our values in Skinrs data structure.
  */
-function comment_skinr_preprocess_index_handler(&$vars) {
-  return $vars['node']->type;
+function comment_skinr_preprocess_index_handler(&$variables) {
+  return $variables['node']->type;
+}
+
+/**
+ * Skinr contextual links handler.
+ *
+ * @param &$variables
+ *   Passes in the $variables parameter from skinr_preprocess().
+ * @return
+ *   An array. Each value is an array that forms the function arguments for
+ *   menu_contextual_links(). For example:
+ *   @code
+ *     array(
+ *       'admin/appearance/skinr/edit', array('system', 'navigation')),
+ *     )
+ *   @endcode
+ */
+function comment_skinr_contextual_links(&$variables) {
+  return array(
+    'admin/appearance/skinr/edit', array('comment', $variables['node']->type),
+  );
 }
 
 /**

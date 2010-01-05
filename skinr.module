@@ -56,6 +56,22 @@ function skinr_menu() {
     'weight' => 2,
     'file' => 'skinr.admin.inc',
   );
+  
+  $items['admin/appearance/skinr/edit/%/%'] = array(
+    'title' => 'Edit skin',
+    'title callback' => 'skinr_edit_title',
+    'title arguments' => array(4, 5),
+    'page callback' => 'skinr_edit',
+    'page arguments' => array(4, 5), // module, key
+    'type' => MENU_CALLBACK,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+    'access arguments' => array('administer skinr'),
+  );
+  $items['admin/appearance/skinr/edit/%/%/configure'] = array(
+    'title' => 'Edit skin',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'context' => MENU_CONTEXT_INLINE,
+  );
 
   return $items;
 }
@@ -83,6 +99,37 @@ function skinr_init() {
 }
 
 /**
+ * Menu title callback; sets the title for a Skinr settings form page.
+ *
+ * @param $module
+ *   The module that we're editing settings of.
+ * @param $key
+ *   The key of the object we're editing settings of.
+ */
+function skinr_edit_title($module, $key) {
+  return t('Skinr settings for !module type !key', array('!module' => $module, '!key' => $key));
+}
+
+/**
+ * Menu callback; prepares some variables and displays a Skinr edit form.
+ *
+ * @param $module
+ *   The module that we're editing settings of.
+ * @param $key
+ *   The key of the object we're editing settings of.
+ */
+function skinr_edit($module, $key, $id = NULL) {
+  $arguments = array(
+    'skinr' => array(
+      'module' => $module,
+      'key' => $key,
+      'id' => $id,
+    ),
+  );
+  return drupal_get_form('skinr_form', $arguments);
+}
+
+/**
  * Implementation of hook_form_alter().
  */
 function skinr_form_alter(&$form, $form_state, $form_id) {
@@ -91,6 +138,10 @@ function skinr_form_alter(&$form, $form_state, $form_id) {
 
   foreach ($skinr_data as $module => $settings) {
     if (isset($settings['form'][$form_id])) {
+      if (!empty($form['skinr']) && $form['skinr']['module']['#value'] !== $module) {
+        continue;
+      }
+
       $form_settings = array_merge(_skinr_fetch_data_defaults('form'), $settings['form'][$form_id]);
 
       // Check for access.
@@ -252,9 +303,38 @@ function skinr_form_alter(&$form, $form_state, $form_id) {
 }
 
 /**
+ * Skinr form.
+ */
+function skinr_form($form, &$form_state, $arguments) {
+  $form = array();
+
+  $form['skinr']['module'] = array(
+    '#type' => 'hidden',
+    '#value' => !empty($form_state['skinr']['module']) ? $form_state['skinr']['module'] : $arguments['skinr']['module'],
+  );
+  $form['skinr']['key'] = array(
+    '#type' => 'hidden',
+    '#value' => !empty($form_state['skinr']['key']) ? $form_state['skinr']['key'] : $arguments['skinr']['key'],
+  );
+  if (!empty($form_state['skinr']['id']) || !empty($arguments['skinr']['id'])) {
+    $form['skinr']['id'] = array(
+      '#type' => 'hidden',
+      '#value' => !empty($form_state['skinr']['id']) ? $form_state['skinr']['id'] : $arguments['skinr']['id'],
+    );
+  }
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+  );
+
+  return $form;
+}
+
+/**
  * Validation handler.
  */
-function skinr_form_validate(&$form, &$form_state) {
+function skinr_form_validate($form, &$form_state) {
   $form_id = $form_state['values']['form_id'];
   $skinr_data = skinr_fetch_data();
 
@@ -279,7 +359,7 @@ function skinr_form_validate(&$form, &$form_state) {
 /**
  * Submit handler.
  */
-function skinr_form_submit(&$form, &$form_state) {
+function skinr_form_submit($form, &$form_state) {
   $form_id = $form_state['values']['form_id'];
   $skinr_data = skinr_fetch_data();
 
@@ -296,7 +376,7 @@ function skinr_form_submit(&$form, &$form_state) {
 /**
  * Implementation of hook_preprocess().
  */
-function skinr_preprocess(&$vars, $hook) {
+function skinr_preprocess(&$variables, $hook) {
   $skinr_data = skinr_fetch_data();
   $info = skinr_process_info_files();
   $current_theme = skinr_current_theme();
@@ -312,7 +392,7 @@ function skinr_preprocess(&$vars, $hook) {
   foreach ($skinr_data as $module => $settings) {
     if (!empty($settings['preprocess'][$original_hook])) {
       $preprocess_settings = $settings['preprocess'][$original_hook];
-      $key = skinr_handler('preprocess_index_handler', 'preprocess', $preprocess_settings['index_handler'], $vars);
+      $key = skinr_handler('preprocess_index_handler', 'preprocess', $preprocess_settings['index_handler'], $variables);
 
       if (!empty($key)) {
         if (is_array($key)) {
@@ -345,14 +425,51 @@ function skinr_preprocess(&$vars, $hook) {
 
         // Add template files.
         if (!empty($style['_template'])) {
-          $vars['template_files'][] = $style['_template'];
+          $variables['template_files'][] = $style['_template'];
           unset($style['_template']);
         }
 
-        $vars['skinr'] = skinr_style_flatten_array($style);
-        $vars['classes_array'] = array_merge($vars['classes_array'], $vars['skinr']);
+        $variables['skinr'] = skinr_style_flatten_array($style);
+        $variables['classes_array'] = array_merge($variables['classes_array'], $variables['skinr']);
       }
     }
+  
+    // Set contextual links.
+    if (!empty($settings['contextual_links'][$original_hook])) {
+      if ($contextual_links = skinr_handler('contextual_links', '', $settings['contextual_links'][$original_hook]['contextual_links_handler'], $variables)) {
+        skinr_contextual_links($variables, $original_hook, $contextual_links);
+      }
+    }
+    
+  }
+}
+
+/**
+ * Implementation of hook_skinr_preprocess_alter().
+ * Set contextual menu items for skinr. We couldn't use hook_block_view_alter()
+ * because not all block are allowing the context to be set from there.
+ */
+function skinr_contextual_links(&$variables, $hook, $contextual_links) {
+  static $hooks;
+
+  if (!isset($hooks)) {
+    $hooks = theme_get_registry();
+  }
+
+  // Determine the primary theme function argument.
+  if (isset($hooks[$hook]['variables'])) {
+    $keys = array_keys($hooks[$hook]['variables']);
+    $key = $keys[0];
+  }
+  else {
+    $key = $hooks[$hook]['render element'];
+  }
+  if (isset($variables[$key])) {
+    $element =& $variables[$key];
+  }
+
+  if (isset($element) && is_array($element)) {
+    $element['#contextual_links']['skinr'] = $contextual_links;
   }
 }
 
@@ -644,6 +761,7 @@ function _skinr_fetch_data_defaults($setting) {
     case 'form':
       $data = array(
         'access_handler' => 'skinr_access_handler',
+        'index_handler' => 'skinr_index_handler',
         'data_handler' => 'skinr_data_handler',
         'submit_handler' => 'skinr_submit_handler',
         'submit_handler_attach_to' => "['#submit']",
@@ -664,6 +782,7 @@ function _skinr_fetch_data_defaults($setting) {
 function skinr_handler($type, $op, $handler, &$a3, $a4 = NULL, $a5 = NULL, $a6 = NULL, $a7 = NULL) {
   if (is_callable($handler)) {
     switch ($type) {
+      case 'contextual_links':
       case 'preprocess_index_handler':
         return $handler($a3);
       case 'preprocess_hook_callback':

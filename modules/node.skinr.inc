@@ -20,8 +20,16 @@ function node_skinr_data() {
     'preprocess_hook' => 'node',
     'title' => t('node settings'),
   );
+  $data['node']['form']['skinr_form'] = array(
+    'preprocess_hook' => 'node',
+    'title' => t('node settings'),
+    'collapsed' => FALSE,
+  );
   $data['node']['preprocess']['node'] = array(
     'index_handler' => 'node_skinr_preprocess_index_handler',
+  );
+  $data['node']['contextual_links']['node'] = array(
+    'contextual_links_handler' => 'node_skinr_contextual_links',
   );
 
   return $data;
@@ -62,13 +70,33 @@ function node_skinr_form_index_handler($op, &$form, $form_state) {
 /**
  * Skinr preprocess index handler.
  *
- * @param &$vars
- *   Passes in the $vars parameter from module_preprocess().
+ * @param &$variables
+ *   Passes in the $variables parameter from module_preprocess().
  * @return
  *   The index where we can find our values in Skinrs data structure.
  */
-function node_skinr_preprocess_index_handler(&$vars) {
-  return $vars['node']->type;
+function node_skinr_preprocess_index_handler(&$variables) {
+  return $variables['node']->type;
+}
+
+/**
+ * Skinr contextual links handler.
+ *
+ * @param &$variables
+ *   Passes in the $variables parameter from skinr_preprocess().
+ * @return
+ *   An array. Each value is an array that forms the function arguments for
+ *   menu_contextual_links(). For example:
+ *   @code
+ *     array(
+ *       'admin/appearance/skinr/edit', array('system', 'navigation')),
+ *     )
+ *   @endcode
+ */
+function node_skinr_contextual_links(&$variables) {
+  return array(
+    'admin/appearance/skinr/edit', array('node', $variables['node']->type),
+  );
 }
 
 /**

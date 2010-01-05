@@ -9,9 +9,32 @@
 /**
  * Implementation of hook_uninstall().
  */
+function skinr_install() {
+  // Skinr should go before contextual module.
+  db_update('system')
+    ->fields(array('weight' => -1))
+    ->condition('name', 'skinr')
+    ->execute();
+}
+
+/**
+ * Set system.weight to a low value for skinr module.
+ *
+ * Skinr should go before contextual module.
+ */
+function skinr_update_7000() {
+  db_update('system')
+    ->fields(array('weight' => '-1'))
+    ->condition('name', 'skinr')
+    ->execute();
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
 function skinr_uninstall() {
   $result = db_query("SELECT name FROM {variable} WHERE name LIKE 'skinr_%'");
-  while ($variable = db_fetch_object($result)) {
+  foreach ($result as $variable) {
     variable_del($variable->name);
   }
 }

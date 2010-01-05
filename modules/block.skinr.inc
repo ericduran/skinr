@@ -25,8 +25,16 @@ function block_skinr_data() {
     'preprocess_hook' => 'block',
     'title' => t('block settings'),
   );
+  $data['block']['form']['skinr_form'] = array(
+    'preprocess_hook' => 'block',
+    'title' => t('block settings'),
+    'collapsed' => FALSE,
+  );
   $data['block']['preprocess']['block'] = array(
     'index_handler' => 'block_skinr_preprocess_index_handler',
+  );
+  $data['block']['contextual_links']['block'] = array(
+    'contextual_links_handler' => 'block_skinr_contextual_links',
   );
 
   return $data;
@@ -51,18 +59,18 @@ function block_skinr_data() {
 function block_skinr_form_index_handler($op, &$form, $form_state) {
   switch ($op) {
     case 'form':
-      return $form['module']['#value'] .'-'. $form['delta']['#value'];
+      return $form['module']['#value'] . '-' . $form['delta']['#value'];
 
     case 'submit':
       $form_id = $form['form_id']['#value'];
       if ($form_id == 'block_add_block_form') {
         // This is a new block, so we need to fetch the delta from DB
         if ($delta = db_result(db_query("SELECT delta FROM {blocks} WHERE bid = '%s'", db_last_insert_id('boxes', 'bid')))) {
-          return $form_state['values']['module'] .'-'. $delta;
+          return $form_state['values']['module'] . '-' . $delta;
         }
       }
       else {
-        return $form_state['values']['module'] .'-'. $form_state['values']['delta'];
+        return $form_state['values']['module'] . '-' . $form_state['values']['delta'];
       }
   }
 }
@@ -70,13 +78,35 @@ function block_skinr_form_index_handler($op, &$form, $form_state) {
 /**
  * Skinr preprocess index handler.
  *
- * @param &$vars
- *   Passes in the $vars parameter from module_preprocess().
+ * @param &$variables
+ *   Passes in the $variables parameter from module_preprocess().
  * @return
- *   The index where we can find our values in Skinrs data structure.
+ *   The index where we can find our values in Skinrs data structure. If an
+ *   array is returned, it will loop through each index in Skinr's data
+ *   structure and merge the returned classes.
  */
-function block_skinr_preprocess_index_handler(&$vars) {
-  return $vars['block']->module .'-'. $vars['block']->delta;
+function block_skinr_preprocess_index_handler(&$variables) {
+  return $variables['block']->module . '-' . $variables['block']->delta;
+}
+
+/**
+ * Skinr contextual links handler.
+ *
+ * @param &$variables
+ *   Passes in the $variables parameter from skinr_preprocess().
+ * @return
+ *   An array. Each value is an array that forms the function arguments for
+ *   menu_contextual_links(). For example:
+ *   @code
+ *     array(
+ *       'admin/appearance/skinr/edit', array('system', 'navigation')),
+ *     )
+ *   @endcode
+ */
+function block_skinr_contextual_links(&$variables) {
+  return array(
+    'admin/appearance/skinr/edit', array('block', $variables['block']->module . '-' . $variables['block']->delta),
+  );
 }
 
 /**

@@ -27,7 +27,7 @@ function skinr_export_form($form, &$form_state, $theme = NULL) {
     // Export an individual theme.
     
     $theme = str_replace('-', '_', $theme);
-    $code = '$skinr = '. var_export(skinr_get($theme), TRUE) .';';
+    $code = '$skinr = ' . var_export(skinr_get($theme), TRUE) . ';';
     $lines = substr_count($code, "\n") + 1;
     
     $form['theme'] = array(
@@ -52,14 +52,14 @@ function skinr_export_form($form, &$form_state, $theme = NULL) {
     $current_theme = skinr_current_theme();
   
     // Put default theme at the top.
-    $options[$current_theme] = $themes[$current_theme]->info['name'].' ['. t('default') .']';
+    $options[$current_theme] = $themes[$current_theme]->info['name']. ' [' . t('default') . ']';
     
     foreach ($themes as $theme) {
       if ($theme->name == $current_theme) {
         // Do nothing.
       }
       elseif ($theme->status) {
-        $options[$theme->name] = $theme->info['name'] .' ['. t('enabled') .']';
+        $options[$theme->name] = $theme->info['name'] . ' [' . t('enabled') . ']';
       }
       else {
         $options[$theme->name] = $theme->info['name'];
@@ -95,7 +95,7 @@ function skinr_export_form_validate(&$form, &$form_state) {
  * Submit handler for skinr settings export form.
  */
 function skinr_export_form_submit(&$form, &$form_state) {
-  drupal_goto('admin/appearance/skinr/export/'. str_replace('_', '-', $form_state['values']['theme']));
+  drupal_goto('admin/appearance/skinr/export/' . str_replace('_', '-', $form_state['values']['theme']));
 }
 
 /**
@@ -110,14 +110,14 @@ function skinr_import_form($form, &$form_state) {
   $current_theme = skinr_current_theme();
 
   // Put default theme at the top.
-  $options[$current_theme] = $themes[$current_theme]->info['name'].' ['. t('default') .']';
+  $options[$current_theme] = $themes[$current_theme]->info['name']. ' [' . t('default') . ']';
   
   foreach ($themes as $theme) {
     if ($theme->name == $current_theme) {
       // Do nothing.
     }
     elseif ($theme->status) {
-      $options[$theme->name] = $theme->info['name'] .' ['. t('enabled') .']';
+      $options[$theme->name] = $theme->info['name'] . ' [' . t('enabled') . ']';
     }
     else {
       $options[$theme->name] = $theme->info['name'];
@@ -177,7 +177,7 @@ function skinr_import_form_validate(&$form, &$form_state) {
  * Submit handler for skinr settings import form.
  */
 function skinr_import_form_submit(&$form, &$form_state) {
-  variable_set('skinr_'. $form_state['values']['theme'], $form_state['skinr']);
+  variable_set('skinr_' . $form_state['values']['theme'], $form_state['skinr']);
   
   drupal_set_message(t('Skinr settings for the theme %theme have been saved.', array('%theme' => $form_state['values']['theme'])));
   drupal_goto('admin/appearance/skinr');

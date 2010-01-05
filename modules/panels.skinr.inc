@@ -326,13 +326,13 @@ function panels_skinr_preprocess_hook_callback(&$form, $form_state) {
 /**
  * Skinr preprocess index handler.
  *
- * @param &$vars
- *   Passes in the $vars parameter from module_preprocess().
+ * @param &$variables
+ *   Passes in the $variables parameter from module_preprocess().
  * @return
  *   The index where we can find our values in Skinrs data structure.
  */
-function panels_skinr_preprocess_index_handler(&$vars) {
-  return 'display-'. $vars['pane']->did .'-pane-'. $vars['pane']->pid;
+function panels_skinr_preprocess_index_handler(&$variables) {
+  return 'display-'. $variables['pane']->did .'-pane-'. $variables['pane']->pid;
 }
 
 //----------------------------------------------------------------------------
