@@ -506,12 +506,12 @@ function skinr_style_flatten_array($style) {
     if (is_array($entry)) {
       foreach ($entry as $subentry) {
         if (!empty($subentry)) {
-          $return[] = $subentry;
+          $return[] = check_plain($subentry);
         }
       }
     }
     elseif (!empty($entry)) {
-      $return[] = $entry;
+      $return[] = check_plain($entry);
     }
   }
 
