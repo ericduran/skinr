@@ -613,10 +613,13 @@ function skinr_get($theme = NULL, $module = NULL, $key = NULL) {
  * theme is enabled.
  */
 function skinr_current_theme() {
-  global $user;
+  global $user, $custom_theme;
 
   if (!empty($user->theme)) {
     $current_theme = $user->theme;
+  }
+  elseif (!empty($custom_theme)) {
+    $current_theme = $custom_theme;
   }
   else {
     $current_theme = variable_get('theme_default', 'garland');

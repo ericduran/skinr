@@ -253,12 +253,6 @@ function panels_skinr_submit_handler_settings(&$form, $form_state, $module, $for
  */
 function panels_skinr_submit_handler_display(&$form, $form_state, $module, $form_settings) {
   $form_id = $form_state['values']['form_id'];
-  if (!empty($form_state['page']->subtask_id)) {
-    $handler = $form_state['page']->task_id .'_'. $form_state['page']->subtask_id .'_panel_context';
-  }
-  else {
-    $handler = $form_state['page']->task_id .'_panel_context';
-  }
 
   // Include ctools' object cache files
   ctools_include('object-cache');
@@ -267,7 +261,11 @@ function panels_skinr_submit_handler_display(&$form, $form_state, $module, $form
     switch ($form_id) {
       case 'page_manager_save_page_form':
         // Panel page
-        _panels_skinr_save_and_clear_cache($form_state['page']->handlers[$handler]->conf['did']);
+        foreach ($form_state['page']->handler_info as $id => $info) {
+          if ($info['changed']) {
+            _panels_skinr_save_and_clear_cache($form_state['page']->handlers[$id]->conf['did']);
+          }
+        }
         break;
 
       case 'panels_edit_display_form':
@@ -280,7 +278,11 @@ function panels_skinr_submit_handler_display(&$form, $form_state, $module, $form
     switch ($form_id) {
       case 'page_manager_save_page_form':
         // Panel page
-        ctools_object_cache_clear('skinr', $form_state['page']->handlers[$handler]->conf['did']);
+        foreach ($form_state['page']->handler_info as $id => $info) {
+          if ($info['changed']) {
+            ctools_object_cache_clear('skinr', $form_state['page']->handlers[$id]->conf['did']);
+          }
+        }
         break;
 
       case 'panels_edit_display_form':
