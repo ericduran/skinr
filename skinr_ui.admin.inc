@@ -7,27 +7,76 @@
  */
 
 /**
- * Menu callback; displays the skinr administration page.
- *
- * @todo Placeholder settings page.
+ * Menu callback; displays the skinr settings administration form.
  */
-function skinr_admin() {
-  $output = '';
-  return $output;
+function skinr_ui_admin_form($form, &$form_state) {
+  $form = array();
+
+  $form['overlay'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Overlay'),
+    '#collapsible' => TRUE,
+  );
+  $form['overlay']['skinr_overlay_width'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Window width'),
+    '#default_value' => variable_get('skinr_overlay_width', NULL),
+    '#description' => t('The width of the overlay window. Leave this field blank to allow the window to automatically resize itself to the width of the browser.'),
+  );
+  $form['overlay']['skinr_overlay_height'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Window height'),
+    '#default_value' => variable_get('skinr_overlay_height', NULL),
+    '#description' => t('The width of the overlay window. Leave this field blank to allow the window to automatically resize itself to the width of the browser.'),
+  );
+  $form['overlay']['skinr_overlay_autofit'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Auto fit'),
+    '#default_value' => variable_get('skinr_overlay_autofit', TRUE),
+    '#description' => t('Automatically adjust the width and height to make the contents of the window fit inside it.'),
+  );
+  $form['overlay']['skinr_overlay_draggable'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Draggable'),
+    '#default_value' => variable_get('skinr_overlay_draggable', TRUE),
+    '#description' => t('Make the window draggable, allowing you to move it around on the page.'),
+  );
+
+  return system_settings_form($form);
+}
+
+/**
+ * Validation handler for skinr settings administration form.
+ */
+function skinr_ui_admin_form_validate(&$form, &$form_state) {
+  if (empty($form_state['values']['skinr_overlay_width'])) {
+    $form_state['values']['skinr_overlay_width'] = NULL;
+  }
+  if (empty($form_state['values']['skinr_overlay_height'])) {
+    $form_state['values']['skinr_overlay_height'] = NULL;
+  }
 }
 
 /**
  * Menu callback; displays Skinr settings export form.
  */
-function skinr_export_form($form, &$form_state, $theme = NULL) {
+function skinr_ui_export_form($form, &$form_state, $theme = NULL) {
   $form = array();
   $themes = list_themes();
 
   if ($theme) {
     // Export an individual theme.
-
     $theme = str_replace('-', '_', $theme);
-    $code = '$skinr = ' . var_export(skinr_get($theme), TRUE) . ';';
+    $skinrs = skinr_get($theme);
+
+    // Convert classes to arrays.
+    foreach ($skinrs as $module => $data) {
+      foreach ($data as $sid => $skinr) {
+        $skinrs[$module][$sid] = (array) $skinrs[$module][$sid];
+      }
+    }
+
+    $code = '$skinrs = '. var_export($skinrs, TRUE) .';';
     $lines = substr_count($code, "\n") + 1;
 
     $form['theme'] = array(
@@ -49,7 +98,7 @@ function skinr_export_form($form, &$form_state, $theme = NULL) {
 
     $options = array();
     ksort($themes);
-    $current_theme = skinr_current_theme();
+    $current_theme = skinr_current_theme(TRUE);
 
     // Put default theme at the top.
     $options[$current_theme] = $themes[$current_theme]->info['name']. ' [' . t('default') . ']';
@@ -85,7 +134,7 @@ function skinr_export_form($form, &$form_state, $theme = NULL) {
 /**
  * Validation handler for skinr settings export form.
  */
-function skinr_export_form_validate(&$form, &$form_state) {
+function skinr_ui_export_form_validate(&$form, &$form_state) {
   if (!empty($form_state['values']['theme']) && preg_match('/[^a-zA-Z0-9_]/', $form_state['values']['theme'])) {
     form_error($form['theme'], t('The theme name must be alphanumeric and can contain underscores only.'));
   }
@@ -94,20 +143,20 @@ function skinr_export_form_validate(&$form, &$form_state) {
 /**
  * Submit handler for skinr settings export form.
  */
-function skinr_export_form_submit(&$form, &$form_state) {
+function skinr_ui_export_form_submit(&$form, &$form_state) {
   drupal_goto('admin/appearance/skinr/export/' . str_replace('_', '-', $form_state['values']['theme']));
 }
 
 /**
  * Menu callback; displays Skinr settings import form.
  */
-function skinr_import_form($form, &$form_state) {
+function skinr_ui_import_form($form, &$form_state) {
   $form = array();
 
   $options = array();
   $themes = list_themes();
   ksort($themes);
-  $current_theme = skinr_current_theme();
+  $current_theme = skinr_current_theme(TRUE);
 
   // Put default theme at the top.
   $options[$current_theme] = $themes[$current_theme]->info['name']. ' [' . t('default') . ']';
@@ -145,29 +194,36 @@ function skinr_import_form($form, &$form_state) {
 }
 
 /**
- * Validation handler for skinr settings import form.
+ * Validation handler for Skinr settings import form.
  */
-function skinr_import_form_validate(&$form, &$form_state) {
+function skinr_ui_import_form_validate(&$form, &$form_state) {
   if (empty($form_state['values']['skinr_settings'])) {
     // Error.
     form_error($form['skinr_settings'], t('These are not valid Skinr settings.'));
     return;
   }
 
-  $skinr = '';
+  $skinrs = '';
   ob_start();
   eval($form_state['values']['skinr_settings']);
   ob_end_clean();
 
-  foreach ($skinr as $module => $setting) {
-    if (!is_array($setting)) {
+  foreach ($skinrs as $module => $ignored) {
+    if (!is_array($skinrs[$module])) {
       // Error.
-      form_error($form['skinr_settings'], t('These are not valid skinr settings.'));
+      form_error($form['skinr_settings'], t('These are not valid Skinr settings.'));
     }
-    foreach ($setting as $key => $value) {
-      if (!is_array($value)) {
+    foreach ($skinrs[$module] as $sid => $ignored) {
+      if (!is_array($skinrs[$module][$sid])) {
         // Error.
-        form_error($form['skinr_settings'], t('These are not valid skinr settings.'));
+        form_error($form['skinr_settings'], t('These are not valid Skinr settings.'));
+      }
+
+      // Cast skinr array to object so we can actually use it.
+      $skinrs[$module][$sid] = (object) $skinrs[$module][$sid];
+      if (!skinr_validate($skinrs[$module][$sid])) {
+        // Error.
+        form_error($form['skinr_settings'], t('These are not valid Skinr settings.'));
       }
     }
   }
@@ -176,14 +232,20 @@ function skinr_import_form_validate(&$form, &$form_state) {
     form_error($form['theme'], t('The theme name must be alphanumeric and can contain underscores only.'));
   }
 
-  $form_state['skinr'] = &$skinr;
+  $form_state['skinrs'] = &$skinrs;
 }
 
 /**
  * Submit handler for skinr settings import form.
  */
-function skinr_import_form_submit(&$form, &$form_state) {
-  variable_set('skinr_' . $form_state['values']['theme'], $form_state['skinr']);
+function skinr_ui_import_form_submit(&$form, &$form_state) {
+  foreach ($form_state['skinrs'] as $module => $skinrs) {
+    foreach ($skinrs as $sid => $skinr) {
+      if (!skinr_set($skinr)) {
+        drupal_set_message(t('Skinr settings for the theme %theme could not be saved!', array('%theme' => $form_state['values']['theme'])), 'error');
+      }
+    }
+  }
 
   drupal_set_message(t('Skinr settings for the theme %theme have been saved.', array('%theme' => $form_state['values']['theme'])));
   drupal_goto('admin/appearance/skinr');

@@ -12,18 +12,19 @@
  */
 
 /**
- * Implementation of hook_skinr_data().
+ * Implementation of hook_skinr_config().
  */
-function comment_skinr_data() {
+function comment_skinr_config() {
   $data['comment']['form']['node_type_form'] = array(
     'index_handler' => 'comment_skinr_form_index_handler',
     'preprocess_hook' => 'comment_wrapper',
     'title' => t('comment settings'),
     'weight' => 1,
   );
-  $data['comment']['form']['skinr_form'] = array(
+  $data['comment']['form']['skinr_ui_form'] = array(
     'preprocess_hook' => 'comment_wrapper',
     'title' => t('comment settings'),
+    'skinr_weight' => 2,
     'collapsed' => FALSE,
   );
   $data['comment']['preprocess']['comment_wrapper'] = array(
@@ -61,7 +62,13 @@ function comment_skinr_form_index_handler($op, &$form, &$form_state) {
       // Clear old variable before we set a new one if the node type has changed
       if ($form_state['values']['old_type'] != $form_state['values']['type']) {
         foreach ($form_state['values']['skinr_settings']['comment_group'] as $theme_name => $theme_data) {
-          skinr_set($theme_name, 'comment', $form_state['values']['old_type'], '');
+          $skinr = new stdClass();
+          $skinr->theme = $theme_name;
+          $skinr->module = 'comment';
+          $skinr->sid = $form_state['values']['old_type'];
+          $skinr->skins = array();
+
+          skinr_set($skinr);
         }
       }
     return $form_state['values']['type'];
@@ -74,7 +81,9 @@ function comment_skinr_form_index_handler($op, &$form, &$form_state) {
  * @param &$variables
  *   Passes in the $variables parameter from skinr_preprocess().
  * @return
- *   The index where we can find our values in Skinrs data structure.
+ *   The index where we can find our values in Skinrs data structure. If an
+ *   array is returned, it will loop through each index in Skinr's data
+ *   structure and merge the returned classes.
  */
 function comment_skinr_preprocess_index_handler(&$variables) {
   return $variables['node']->type;

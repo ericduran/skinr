@@ -66,7 +66,7 @@
  * - "indexhandler" is required. It specifies a function that returns an index where
  *   Skinr can find the values in its data structure.
  */
-function hook_skinr_data() {
+function hook_skinr_config() {
   $data['example']['form']['block_admin_configure'] = array(
     'index_handler' => 'example_skinr_index_handler',
     'preprocess_hook' => 'block',

@@ -1,0 +1,15 @@
+;$Id$
+
+name = Skinr UI
+description = Administrative interface to skinr. Without this module, you cannot edit your skins.
+package = Skinr
+core = 7.x
+
+dependencies[] = skinr
+;dependencies[] = dialog
+
+files[] = skinr_ui.module
+files[] = skinr_ui.admin.inc
+files[] = skinr_ui.rules.inc
+
+configure = admin/appearance/skinr

@@ -47,18 +47,18 @@ function skinr_access_handler($op, &$form, $form_state) {
 function skinr_index_handler($op, &$form, $form_state) {
   switch ($op) {
     case 'form':
-      if (empty($form['skinr']['key']['#value'])) {
+      if (empty($form['skinr']['sid']['#value'])) {
         trigger_error(sprintf("The form with form_id '%' is not a valid skinr form.", $form['form_id']['#value']), E_USER_ERROR);
         return FALSE;
       }
-      return $form['skinr']['key']['#value'];
+      return $form['skinr']['sid']['#value'];
 
     case 'submit':
-      if (empty($form_state['values']['key'])) {
+      if (empty($form_state['values']['sid'])) {
         trigger_error(sprintf("The form with form_id '%' is not a valid skinr form.", $form['form_id']['#value']), E_USER_ERROR);
         return FALSE;
       }
-      return $form_state['values']['key'];
+      return $form_state['values']['sid'];
   }
 }
 
@@ -72,7 +72,7 @@ function skinr_index_handler($op, &$form, $form_state) {
  * @param $module
  *   The module that is currently being processed.
  * @param $form_settings
- *   The settings from hook_skinr_data() for the form that's currently being
+ *   The settings from hook_skinr_config() for the form that's currently being
  *   processed.
  * @return
  *   TRUE if we get access, FALSE if we don't.
@@ -97,7 +97,7 @@ function skinr_data_handler(&$form, $form_state, $theme, $module, $form_settings
  * @param $module
  *   The module that is currently being processed.
  * @param $form_settings
- *   The settings from hook_skinr_data() for the form that's currently being
+ *   The settings from hook_skinr_config() for the form that's currently being
  *   processed.
  * @return
  *   TRUE if we get access, FALSE if we don't.
@@ -106,55 +106,41 @@ function skinr_submit_handler(&$form, $form_state, $module, $form_settings) {
   if (isset($form_state['values']['skinr_settings'][$module . '_group'])) {
     foreach ($form_state['values']['skinr_settings'][$module . '_group'] as $theme_name => $theme) {
       if ((isset($theme['widgets']) && count($theme['widgets'])) || isset($theme['advanced']['_additional'])) {
-        $hook  = $module;
-        $key   = skinr_handler('form_index_handler', 'submit', $form_settings['index_handler'], $form, $form_state);
-        $value = array();
+        $skinr = new stdClass();
+        $skinr->theme = $theme_name;
+        $skinr->module = $module;
+        $skinr->sid = skinr_handler('form_index_handler', 'submit', $form_settings['index_handler'], $form, $form_state);
+        $skinr->skins = array();
 
         if (isset($theme['widgets']) && is_array($theme['widgets'])) {
           foreach ($theme['widgets'] as $skin_id => $skin_value) {
-            $skin_value = is_array($skin_value) ? _skinr_array_strip_empty($skin_value) : $skin_value;
-            if (!empty($skin_value)) {
-              $value[$skin_id] = $skin_value;
-            }
+            $skinr->skins[$skin_id] = $skin_value;
           }
         }
 
         if (isset($theme['advanced']['_additional'])) {
           $theme['advanced']['_additional'] = trim($theme['advanced']['_additional']);
           if (!empty($theme['advanced']['_additional'])) {
-            $value['_additional'] = $theme['advanced']['_additional'];
+            $skinr->skins['_additional'] = $theme['advanced']['_additional'];
           }
         }
 
         if (isset($theme['advanced']['_template'])) {
           $theme['advanced']['_template'] = trim($theme['advanced']['_template']);
           if (!empty($theme['advanced']['_template'])) {
-            $value['_template'] = $theme['advanced']['_template'];
+            $skinr->skins['_template'] = $theme['advanced']['_template'];
           }
         }
 
-        if (empty($key)) {
-          // We didn't receive a valid key, so raise an error
+        if (empty($skinr->sid)) {
+          // We didn't receive a valid sid, so raise an error
           drupal_set_message(t("Skinr settings weren't saved due to an error."), 'error');
         }
 
-        skinr_set($theme_name, $hook, $key, $value);
+        skinr_set($skinr);
       }
     }
   }
-}
-
-/**
- * Helper function to remove unchecked entries from checkbox form element.
- */
-function _skinr_array_strip_empty($array) {
-  $new_array = array();
-  foreach ($array as $key => $value) {
-    if (!empty($value)) {
-      $new_array[$key] = $value;
-    }
-  }
-  return $new_array;
 }
 
 // Declare API compatibility on behalf of core modules:

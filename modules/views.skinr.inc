@@ -12,9 +12,9 @@
  */
 
 /**
- * Implementation of hook_skinr_data().
+ * Implementation of hook_skinr_config().
  */
-function views_skinr_data() {
+function views_skinr_config() {
   $data['views']['form']['views_ui_edit_display_form'] = array(
     'index_handler' => 'views_skinr_form_index_handler',
     'access_handler' => 'views_skinr_access_handler_display',
@@ -29,6 +29,12 @@ function views_skinr_data() {
   $data['views']['form']['views_ui_edit_view_form'] = array(
     'access_handler' => 'views_skinr_access_handler_view',
     'submit_handler' => 'views_skinr_submit_handler_view',
+  );
+  $data['views']['form']['skinr_ui_form'] = array(
+    'index_handler' => 'skinr_ajax_index_handler',
+    'preprocess_hook' => 'views_view',
+    'title' => t('views style settings'),
+    'collapsed' => FALSE,
   );
   $data['views']['preprocess']['views_view'] = array(
     'index_handler' => 'views_skinr_preprocess_index_handler',
@@ -111,18 +117,18 @@ function views_skinr_access_handler_view($op, &$form, $form_state) {
   // add it manually.
 
   // Only add submit handler once
-  if (!in_array('skinr_form_submit', $form['#submit'])) {
-    $form['#submit'][] = 'skinr_form_submit';
+  if (!in_array('skinr_ui_form_submit', $form['#submit'])) {
+    $form['#submit'][] = 'skinr_ui_form_submit';
   }
   // Special for views
-  if (isset($form['buttons']['save']['#submit']) && !in_array('skinr_form_submit', $form['buttons']['save']['#submit'])) {
-    $form['buttons']['save']['#submit'][] = 'skinr_form_submit';
+  if (isset($form['buttons']['save']['#submit']) && !in_array('skinr_ui_form_submit', $form['buttons']['save']['#submit'])) {
+    $form['buttons']['save']['#submit'][] = 'skinr_ui_form_submit';
   }
-  if (isset($form['buttons']['cancel']['#submit']) && !in_array('skinr_form_submit', $form['buttons']['cancel']['#submit'])) {
+  if (isset($form['buttons']['cancel']['#submit']) && !in_array('skinr_ui_form_submit', $form['buttons']['cancel']['#submit'])) {
     // Need to make this happen before views' submit handler because it hijacks
     // things and does a drupal_goto(). That effectively prevents any other
     // submit handlers from being processed.
-    array_unshift($form['buttons']['cancel']['#submit'], 'skinr_form_submit');
+    array_unshift($form['buttons']['cancel']['#submit'], 'skinr_ui_form_submit');
   }
 
   return FALSE;
@@ -139,10 +145,10 @@ function views_skinr_access_handler_view($op, &$form, $form_state) {
  * @param $module
  *   The module that is currently being processed.
  * @param $form_settings
- *   The settings from hook_skinr_data() for the form that's currently being
+ *   The settings from hook_skinr_config() for the form that's currently being
  *   processed.
  * @return
- *   TRUE if we get access, FALSE if we don't.
+ *   A skinr object.
  */
 function views_skinr_data_handler(&$form, $form_state, $theme, $module, $form_settings) {
   // Ensure we have the required index_handler
@@ -154,9 +160,15 @@ function views_skinr_data_handler(&$form, $form_state, $theme, $module, $form_se
   // Fetch skinr data for this view from cache
   views_include('cache');
 
-  if ($skinr_data = views_object_cache_get('skinr', $form_state['view']->name)) {
-    if (isset($skinr_data[$theme][$index])) {
-      return $skinr_data[$theme][$index];
+  if ($skinrs = views_object_cache_get('skinr', $form_state['view']->name)) {
+    if (isset($skinrs[$theme][$index])) {
+      $skinr = new stdClass();
+      $skinr->theme = $theme;
+      $skinr->module = $module;
+      $skinr->sid = $index;
+      $skinr->skins = $skinrs[$theme][$index];
+
+      return $skinr;
     }
     else {
       return array();
@@ -184,13 +196,12 @@ function views_skinr_data_handler(&$form, $form_state, $theme, $module, $form_se
 function views_skinr_submit_handler_display(&$form, $form_state, $module, $form_settings) {
   foreach ($form_state['values']['skinr_settings'][$module .'_group'] as $theme_name => $theme) {
     if ((isset($theme['widgets']) && count($theme['widgets'])) || isset($theme['advanced']['_additional'])) {
-      $hook  = $module;
-      $key   = skinr_handler('form_index_handler', 'submit', $form_settings['index_handler'], $form, $form_state);
+      $sid   = skinr_handler('form_index_handler', 'submit', $form_settings['index_handler'], $form, $form_state);
       $value = array();
 
       if (is_array($theme['widgets'])) {
         foreach ($theme['widgets'] as $skin_id => $skin_value) {
-          $value[$skin_id] = is_array($skin_value) ? _skinr_array_strip_empty($skin_value) : $skin_value;
+          $value[$skin_id] = $skin_value;
         }
       }
 
@@ -208,27 +219,27 @@ function views_skinr_submit_handler_display(&$form, $form_state, $module, $form_
         }
       }
 
-      if (empty($key)) {
-        // We didn't receive a valid key, so raise an error
+      if (empty($sid)) {
+        // We didn't receive a valid sid, so raise an error
         drupal_set_message(t("Skinr settings weren't saved due to an error."), 'error');
       }
 
       // Save skinr_settings for this view in cache
       views_include('cache');
-      if (!$skinr_data = views_object_cache_get('skinr', $form_state['view']->name, TRUE)) {
-        $skinr_data = array();
+      if (!$skinrs = views_object_cache_get('skinr', $form_state['view']->name, TRUE)) {
+        $skinrs = array();
         // Fetch skinr data
         $skinr = skinr_get($theme_name);
         if (isset($skinr[$module])) {
           foreach ($skinr[$module] as $skinr_key => $skinr_value) {
             if (drupal_substr($skinr_key, 0, drupal_strlen('view-'. $form_state['view']->name)) == 'view-'. $form_state['view']->name) {
-              $skinr_data[$theme_name][$skinr_key] = $skinr_value;
+              $skinrs[$theme_name][$skinr_key] = $skinr_value;
             }
           }
         }
       }
-      $skinr_data[$theme_name][$key] = $value;
-      views_object_cache_set('skinr', $form_state['view']->name, $skinr_data);
+      $skinrs[$theme_name][$sid] = $value;
+      views_object_cache_set('skinr', $form_state['view']->name, $skinrs);
     }
   }
 }
@@ -239,11 +250,16 @@ function views_skinr_submit_handler_view(&$form, $form_state, $module, $form_set
       // Fetch skinr data for this view from cache
       views_include('cache');
 
-      if ($skinr_data = views_object_cache_get('skinr', $form_state['view']->name, TRUE)) {
-        $hook = $module;
-        foreach ($skinr_data as $theme_name => $theme) {
-          foreach ($theme as $key => $value) {
-            skinr_set($theme_name, $hook, $key, $value);
+      if ($skinrs = views_object_cache_get('skinr', $form_state['view']->name, TRUE)) {
+        foreach ($skinrs as $theme_name => $theme) {
+          foreach ($theme as $sid => $skins) {
+            $skinr = new stdClass();
+            $skinr->theme = $theme_name;
+            $skinr->module = $module;
+            $skinr->sid = $sid;
+            $skinr->skins = $skins;
+
+            skinr_set($skinr);
           }
         }
         views_object_cache_clear('skinr', $form_state['view']->name);
@@ -264,7 +280,9 @@ function views_skinr_submit_handler_view(&$form, $form_state, $module, $form_set
  * @param &$variables
  *   Passes in the $variables parameter from module_preprocess().
  * @return
- *   The index where we can find our values in Skinrs data structure.
+ *   The index where we can find our values in Skinrs data structure. If an
+ *   array is returned, it will loop through each index in Skinr's data
+ *   structure and merge the returned classes.
  */
 function views_skinr_preprocess_index_handler(&$variables) {
   $default = $variables['view']->display_handler->is_defaulted('style_options');

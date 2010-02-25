@@ -12,15 +12,15 @@
  */
 
 /**
- * Implementation of hook_skinr_data().
+ * Implementation of hook_skinr_config().
  */
-function node_skinr_data() {
+function node_skinr_config() {
   $data['node']['form']['node_type_form'] = array(
     'index_handler' => 'node_skinr_form_index_handler',
     'preprocess_hook' => 'node',
     'title' => t('node settings'),
   );
-  $data['node']['form']['skinr_form'] = array(
+  $data['node']['form']['skinr_ui_form'] = array(
     'preprocess_hook' => 'node',
     'title' => t('node settings'),
     'collapsed' => FALSE,
@@ -60,7 +60,13 @@ function node_skinr_form_index_handler($op, &$form, $form_state) {
       // Clear old variable before we set a new one if the node type has changed
       if ($form_state['values']['old_type'] != $form_state['values']['type']) {
         foreach ($form_state['values']['skinr_settings']['node_group'] as $theme_name => $theme_data) {
-          skinr_set($theme_name, 'comment', $form_state['values']['old_type'], '');
+          $skinr = new stdClass();
+          $skinr->theme = $theme_name;
+          $skinr->module = 'node';
+          $skinr->sid = $form_state['values']['old_type'];
+          $skinr->skins = array();
+
+          skinr_set($skinr);
         }
       }
     return $form_state['values']['type'];
@@ -73,7 +79,9 @@ function node_skinr_form_index_handler($op, &$form, $form_state) {
  * @param &$variables
  *   Passes in the $variables parameter from module_preprocess().
  * @return
- *   The index where we can find our values in Skinrs data structure.
+ *   The index where we can find our values in Skinrs data structure. If an
+ *   array is returned, it will loop through each index in Skinr's data
+ *   structure and merge the returned classes.
  */
 function node_skinr_preprocess_index_handler(&$variables) {
   return $variables['node']->type;

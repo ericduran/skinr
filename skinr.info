@@ -2,13 +2,14 @@
 
 name = Skinr
 description = Provides a way to define and/or skin bits of Drupal output from the UI.
+package = Skinr
 core = 7.x
 
 files[] = skinr.module
-files[] = skinr.admin.inc
 files[] = skinr.handlers.inc
 files[] = modules/block.skinr.inc
 files[] = modules/comment.skinr.inc
 files[] = modules/node.skinr.inc
 files[] = modules/panels.skinr.inc
+files[] = modules/skinr.skinr.inc
 files[] = modules/views.skinr.inc

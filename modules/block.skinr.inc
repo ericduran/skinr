@@ -12,20 +12,24 @@
  */
 
 /**
- * Implementation of hook_skinr_data().
+ * Implementation of hook_skinr_config().
  */
-function block_skinr_data() {
+function block_skinr_config() {
   $data['block']['form']['block_admin_configure'] = array(
     'index_handler' => 'block_skinr_form_index_handler',
     'preprocess_hook' => 'block',
     'title' => t('block settings'),
+    'skinr_weight' => 0,
+    'collapsed' => FALSE,
   );
   $data['block']['form']['block_add_block_form'] = array(
     'index_handler' => 'block_skinr_form_index_handler',
     'preprocess_hook' => 'block',
     'title' => t('block settings'),
+    'skinr_weight' => 0,
+    'collapsed' => FALSE,
   );
-  $data['block']['form']['skinr_form'] = array(
+  $data['block']['form']['skinr_ui_form'] = array(
     'preprocess_hook' => 'block',
     'title' => t('block settings'),
     'collapsed' => FALSE,
@@ -65,7 +69,10 @@ function block_skinr_form_index_handler($op, &$form, $form_state) {
       $form_id = $form['form_id']['#value'];
       if ($form_id == 'block_add_block_form') {
         // This is a new block, so we need to fetch the delta from DB
-        if ($delta = db_result(db_query("SELECT delta FROM {blocks} WHERE bid = '%s'", db_last_insert_id('boxes', 'bid')))) {
+        $delta = db_query("SELECT delta FROM {blocks} WHERE bid = :bid", array(
+          ':bid' => db_last_insert_id('boxes', 'bid'),
+        ))->fetchField();
+        if ($delta) {
           return $form_state['values']['module'] . '-' . $delta;
         }
       }

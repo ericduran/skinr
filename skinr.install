@@ -2,39 +2,144 @@
 // $Id$
 
 /**
- * @file skinr.install
+ * @file
  * Contains install, update, and uninstall functions for Skinr.
  */
 
 /**
- * Implementation of hook_uninstall().
+ * Implementation of hook_schema.
  */
-function skinr_install() {
-  // Skinr should go before contextual module.
-  db_update('system')
-    ->fields(array('weight' => -1))
-    ->condition('name', 'skinr')
-    ->execute();
+function skinr_schema() {
+  $schema['skinr'] = array(
+    'description' => 'Stores skinr data.',
+    'fields' => array(
+      'theme' => array(
+        'description' => 'The system name of the theme.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'module' => array(
+        'description' => 'The module this skinr settings is for.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'sid' => array(
+        'description' => 'A unique identifier for this skinr datum.',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'skins' => array(
+        'description' => 'The skins set for this datum.',
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => TRUE,
+        'serialize' => TRUE,
+      ),
+      'settings' => array(
+        'description' => 'Custom settings for this id.',
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => TRUE,
+        'serialize' => TRUE,
+      ),
+    ),
+    'primary key' => array('theme', 'module', 'sid'),
+    'indexes' => array(
+      'theme' => array('theme'),
+      'module' => array('module'),
+      'sid' => array('sid'),
+    ),
+  );
+
+  $schema['skinr_rules'] = array(
+    'description' => 'Stores skinr page rule data.',
+    'fields' => array(
+      'rid' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'Primary Key: Unique skinr page rule ID.',
+      ),
+      'title' => array(
+        'description' => 'The administrative title for this rule.',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'roles' => array(
+        'type' => 'text',
+        'size' => 'normal',
+        'not null' => FALSE,
+        'serialize' => TRUE,
+        'description' => 'A serialized array of roles for this record.',
+      ),
+      'visibility' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+        'description' => 'Flag to indicate how to show on pages. (0 = Show on all pages except listed pages, 1 = Show only on listed pages, 2 = Use custom PHP code to determine visibility.)',
+      ),
+      'pages' => array(
+        'type' => 'text',
+        'not null' => TRUE,
+        'description' => 'Contents of the "Pages" block; contains either a list of paths on which to include/exclude the region or PHP code, depending on the visibility setting.',
+      ),
+    ),
+    'primary key' => array('rid'),
+  );
+
+  return $schema;
 }
 
 /**
- * Set system.weight to a low value for skinr module.
- *
- * Skinr should go before contextual module.
+ * This old update is no longer required.
  */
 function skinr_update_7000() {
-  db_update('system')
-    ->fields(array('weight' => '-1'))
-    ->condition('name', 'skinr')
-    ->execute();
 }
 
 /**
- * Implementation of hook_uninstall().
+ * Install new skinr table and convert old variables to the new db system.
  */
-function skinr_uninstall() {
+function skinr_update_7001() {
+  $ret = array();
+
+  // Install tables.
+  drupal_install_schema('skinr');
+
+  // Exclude variables that aren't theme settings (from skinr_ui).
+  $exclude = array('skinr_overlay_width', 'skinr_overlay_height', 'skinr_overlay_autofit', 'skinr_overlay_draggable');
+
   $result = db_query("SELECT name FROM {variable} WHERE name LIKE 'skinr_%'");
   foreach ($result as $variable) {
-    variable_del($variable->name);
+    if (!in_array($variable->name, $exclude)) {
+      // Convert from variable to db.
+      $theme = substr($variable->name, 6);
+      $skinr = variable_get($variable->name, array());
+      foreach ($skinr as $module => $sids) {
+        foreach ($sids as $sid => $skins) {
+          $id = db_insert('skinr')
+            ->fields(array(
+              'theme' => $theme,
+              'module' => $module,
+              'sid' => $sid,
+              'skins' => serialize($skins),
+              'settings' => serialize(array()),
+            ))
+            ->execute();
+        }
+      }
+
+      // Delete the old variable.
+      variable_del($variable->name);
+    }
   }
+
+  return t('New Skinr tables haev been created, and all old variables converted to the new db system.');
 }
