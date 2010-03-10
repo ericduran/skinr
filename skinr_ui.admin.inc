@@ -73,20 +73,14 @@ function skinr_ui_list($form, &$form_state) {
       foreach ($elements as $sid => $skin) {
         $operations = array(
           'edit' => array(
-            'data' => array(
-              '#type' => 'link',
-              '#title' => t('edit'),
-              '#href' => 'admin/appearance/skinr/edit/nojs/' . $module . '/' . $sid,
-              '#options' => array('query' => $destination),
-            ),
+            'title' => t('edit'),
+            'href' => 'admin/appearance/skinr/edit/nojs/' . $module . '/' . $sid,
+            'query' => $destination,
           ),
           'delete' => array(
-            'data' => array(
-              '#type' => 'link',
-              '#title' => t('delete'),
-              '#href' => 'admin/appearance/skinr/delete/'. $theme->name .'/'. $module .'/'. $sid,
-              '#options' => array('query' => $destination),
-            ),
+            'title' => t('delete'),
+            'href' => 'admin/appearance/skinr/delete/'. $theme->name .'/'. $module .'/'. $sid,
+            'query' => $destination,
           ),
         );
         $options[$theme->name . '__' . $module . '__' . $sid] = array(
@@ -95,7 +89,7 @@ function skinr_ui_list($form, &$form_state) {
           'sid' => $sid,
           'operations' => array(
             'data' => array(
-              '#theme' => 'links__node_operations',
+              '#theme' => 'links__skinr_operations',
               '#links' => $operations,
               '#attributes' => array('class' => array('links', 'inline')),
             ),
