@@ -23,6 +23,14 @@ function skinr_ui_install() {
 function skinr_uninstall() {
   variable_del('skinr_overlay_width');
   variable_del('skinr_overlay_height');
+}
+
+/**
+ * Delete a few unused variables.
+ */
+function skinr_ui_update_7000() {
   variable_del('skinr_overlay_autofit');
   variable_del('skinr_overlay_draggable');
+
+  return array(array('success' => TRUE, 'query' => "Some variables that are no longer used have been deleted."));
 }

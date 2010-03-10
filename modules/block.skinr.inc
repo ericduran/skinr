@@ -111,9 +111,11 @@ function block_skinr_preprocess_index_handler(&$variables) {
  *   @endcode
  */
 function block_skinr_contextual_links(&$variables) {
-  return array(
+  $links = array();
+  $links['skinr-block'] = array(
     'admin/appearance/skinr/edit', array('block', $variables['block']->module . '-' . $variables['block']->delta),
   );
+  return $links;
 }
 
 /**

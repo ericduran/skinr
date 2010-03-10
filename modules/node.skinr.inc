@@ -102,9 +102,11 @@ function node_skinr_preprocess_index_handler(&$variables) {
  *   @endcode
  */
 function node_skinr_contextual_links(&$variables) {
-  return array(
+  $links = array();
+  $links['skinr-node'] = array(
     'admin/appearance/skinr/edit', array('node', $variables['node']->type),
   );
+  return $links;
 }
 
 /**

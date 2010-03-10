@@ -30,6 +30,9 @@ function skinr_skinr_config() {
   $data['page']['preprocess']['html'] = array(
     'index_handler' => 'page_skinr_preprocess_index_handler',
   );
+  $data['page']['contextual_links']['html'] = array(
+    'contextual_links_handler' => 'page_skinr_contextual_links',
+  );
 
   return $data;
 }
@@ -86,6 +89,40 @@ function page_skinr_preprocess_index_handler(&$vars) {
     }
   }
   return $indices;
+}
+
+/**
+ * Skinr contextual links handler.
+ *
+ * @param &$variables
+ *   Passes in the $variables parameter from skinr_preprocess().
+ * @return
+ *   An associative array. Each value is an array that forms the function
+ *   arguments for menu_contextual_links(). For example:
+ *   @code
+ *    $links = array(
+ *      'skinr-modulename' => array(
+ *        'admin/appearance/skinr/edit', array('system', 'navigation')),
+ *      ),
+ *      'skinr-modulename-1' => array(
+ *        'admin/appearance/skinr/edit', array('system', 'something-else')),
+ *      ),
+ *    );
+ *   @endcode
+ */
+function page_skinr_contextual_links(&$variables) {
+  $rules = skinr_rule_load();
+  $links = array();
+  $counter = 1;
+
+  foreach ($rules as $rule) {
+    if (skinr_rule_visible($rule->rid)) {
+      $links['skinr-page-' . $counter++] = array(
+        'admin/appearance/skinr/edit', array('page', $rule->rid),
+      );
+    }
+  }
+  return $links;
 }
 
 /**

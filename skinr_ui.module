@@ -27,45 +27,16 @@ function skinr_ui_permission() {
 function skinr_ui_menu() {
   $items['admin/appearance/skinr'] = array(
     'title' => 'Skinr',
+    'description' => 'Manage your skinr settings and page rules, import and export skinr settings for each theme, and configure skinr\'s overlay settings.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('skinr_ui_admin_form'),
+    'page arguments' => array('skinr_ui_list'),
     'access arguments' => array('administer skinr'),
     'file' => 'skinr_ui.admin.inc',
   );
-  $items['admin/appearance/skinr/settings'] = array(
-    'title' => 'Settings',
+  $items['admin/appearance/skinr/list'] = array(
+    'title' => 'List',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -10,
-  );
-  $items['admin/appearance/skinr/import'] = array(
-    'title' => 'Import',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('skinr_ui_import_form'),
-    'type' => MENU_LOCAL_TASK,
-    'access arguments' => array('administer skinr'),
-    'parent' => 'admin/appearance/skinr',
-    'weight' => 1,
-    'file' => 'skinr_ui.admin.inc',
-  );
-  $items['admin/appearance/skinr/export'] = array(
-    'title' => 'Export',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('skinr_ui_export_form'),
-    'type' => MENU_LOCAL_TASK,
-    'access arguments' => array('administer skinr'),
-    'parent' => 'admin/appearance/skinr',
-    'weight' => 2,
-    'file' => 'skinr_ui.admin.inc',
-  );
-  $items['admin/appearance/skinr/export/%'] = array(
-    'title' => 'Export',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('skinr_ui_export_form', 4),
-    'type' => MENU_LOCAL_TASK,
-    'access arguments' => array('administer skinr'),
-    'parent' => 'admin/appearance/skinr',
-    'weight' => 2,
-    'file' => 'skinr_ui.admin.inc',
   );
 
   // Page rules.
@@ -75,7 +46,7 @@ function skinr_ui_menu() {
     'type' => MENU_LOCAL_TASK,
     'access arguments' => array('administer skinr'),
     'parent' => 'admin/settings/skinr',
-    'weight' => 3,
+    'weight' => 1,
     'file' => 'skinr_ui.rules.inc',
   );
   $items['admin/appearance/skinr/page/add'] = array(
@@ -94,14 +65,6 @@ function skinr_ui_menu() {
     'access arguments' => array('administer skinr'),
     'file' => 'skinr_ui.rules.inc',
   );
-  $items['admin/appearance/skinr/page/edit/%'] = array(
-    'title' => 'Edit Skinr page rule',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('skinr_rule_edit', 5),
-    'type' => MENU_CALLBACK,
-    'access arguments' => array('administer skinr'),
-    'file' => 'skinr_ui.rules.inc',
-  );
   $items['admin/appearance/skinr/page/delete'] = array(
     'title' => 'Add Skinr page rule',
     'page callback' => 'drupal_get_form',
@@ -110,15 +73,42 @@ function skinr_ui_menu() {
     'access arguments' => array('administer skinr'),
     'file' => 'skinr_ui.rules.inc',
   );
-  $items['admin/appearance/skinr/page/delete/%'] = array(
-    'title' => 'Add Skinr page rule',
+
+  // Import & Export.
+  $items['admin/appearance/skinr/import'] = array(
+    'title' => 'Import',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('skinr_rule_delete_confirm', 5),
-    'type' => MENU_CALLBACK,
+    'page arguments' => array('skinr_ui_import_form'),
+    'type' => MENU_LOCAL_TASK,
     'access arguments' => array('administer skinr'),
-    'file' => 'skinr_ui.rules.inc',
+    'parent' => 'admin/appearance/skinr',
+    'weight' => 2,
+    'file' => 'skinr_ui.admin.inc',
+  );
+  $items['admin/appearance/skinr/export'] = array(
+    'title' => 'Export',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('skinr_ui_export_form'),
+    'type' => MENU_LOCAL_TASK,
+    'access arguments' => array('administer skinr'),
+    'parent' => 'admin/appearance/skinr',
+    'weight' => 3,
+    'file' => 'skinr_ui.admin.inc',
   );
 
+  // Settings.
+  $items['admin/appearance/skinr/settings'] = array(
+    'title' => 'Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('skinr_ui_settings'),
+    'type' => MENU_LOCAL_TASK,
+    'access arguments' => array('administer skinr'),
+    'parent' => 'admin/appearance/skinr',
+    'weight' => 4,
+    'file' => 'skinr_ui.admin.inc',
+  );
+
+  // Edit Skinr settings.
   $items['admin/appearance/skinr/edit/%/%'] = array(
     'title' => 'Edit skin',
     'title callback' => 'skinr_ui_edit_title',
@@ -131,8 +121,29 @@ function skinr_ui_menu() {
   );
   $items['admin/appearance/skinr/edit/%/%/configure'] = array(
     'title' => 'Edit skin',
+    'title callback' => 'skinr_ui_edit_contextual_title',
+    'title arguments' => array(4, 5),
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'context' => MENU_CONTEXT_INLINE,
+  );
+
+  // Delete Skinr settings.
+  $items['admin/appearance/skinr/delete/%/%/%'] = array(
+    'title' => 'Delete skin',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('skinr_ui_delete_confirm', 4, 5, 6), // theme, module, sid
+    'type' => MENU_CALLBACK,
+    'access arguments' => array('administer skinr'),
+    'file' => 'skinr_ui.admin.inc',
+  );
+
+  // Fetch skin file info through AJAX.
+  $items['admin/appearance/skinr/info/%'] = array(
+    'title' => 'Skinr file information',
+    'page callback' => 'skinr_ui_skin_get_files',
+    'page arguments' => array(4),
+    'type' => MENU_CALLBACK,
+    'access arguments' => array('administer skinr'),
   );
 
   return $items;
@@ -144,10 +155,13 @@ function skinr_ui_menu() {
 function skinr_ui_help($path, $arg) {
   switch ($path) {
     case 'admin/appearance/skinr':
-      return t('Please refer to <a class="ext" href="http://drupal.org/node/578552">@skinr introduction </a> and <a class="ext" href="http://drupal.org/node/578574">documentation</a>.', array('@skinr' => 'Skinr'));
-      break;
     case 'admin/appearance/skinr/page':
-      return t('Please refer to <a class="ext" href="http://drupal.org/node/578552">@skinr introduction </a> and <a class="ext" href="http://drupal.org/node/578574">documentation</a>.', array('@skinr' => 'Skinr'));
+      if (module_exists('advanced_help')) {
+        return t('Visit the <a href="@skinr-help">help page</a> for full documentation.', array('@skinr-help' => url('admin/advanced_help/skinr')));
+      }
+      else {
+        return t('Please download and enable the <a href="http://drupal.org/project/advanced_help">Advanced Help</a> module for full Skinr documentation.');
+      }
       break;
   }
 }
@@ -165,6 +179,31 @@ function skinr_ui_edit_title($module, $sid) {
 }
 
 /**
+ * Menu title callback; sets the title for a Skinr settings form page.
+ *
+ * @param $module
+ *   The module that we're editing settings of.
+ * @param $sid
+ *   The sid of the object we're editing settings of.
+ */
+function skinr_ui_edit_contextual_title($module, $sid) {
+  $contextual_links = skinr_ui_get_contextual_links();
+  foreach ($contextual_links as $hook => $links) {
+    $counter = 1;
+    foreach ($links as $link) {
+      if ($link[1][0] == $module && $link[1][1] == $sid) {
+        if (count($links) > 1) {
+          return t('Edit skin !number', array('!number' => $counter));
+        }
+        break 2;
+      }
+      $counter++;
+    }
+  }
+  return t('Edit skin');
+}
+
+/**
  * Menu callback; prepares some variables and displays a Skinr edit form.
  *
  * @param $module
@@ -172,12 +211,11 @@ function skinr_ui_edit_title($module, $sid) {
  * @param $sid
  *   The sid of the object we're editing settings of.
  */
-function skinr_ui_edit($module, $sid, $id = NULL) {
+function skinr_ui_edit($module, $sid) {
   $arguments = array(
     'skinr' => array(
       'module' => $module,
       'sid' => $sid,
-      'id' => $id,
     ),
   );
   return drupal_get_form('skinr_ui_form', $arguments);
@@ -197,12 +235,6 @@ function skinr_ui_form($form, &$form_state, $arguments) {
     '#type' => 'hidden',
     '#value' => !empty($form_state['skinr']['sid']) ? $form_state['skinr']['sid'] : $arguments['skinr']['sid'],
   );
-  if (!empty($form_state['skinr']['id']) || !empty($arguments['skinr']['id'])) {
-    $form['skinr']['id'] = array(
-      '#type' => 'hidden',
-      '#value' => !empty($form_state['skinr']['id']) ? $form_state['skinr']['id'] : $arguments['skinr']['id'],
-    );
-  }
 
   $form['submit'] = array(
     '#type' => 'submit',
@@ -254,7 +286,10 @@ function skinr_ui_form_alter(&$form, $form_state, $form_id) {
           );
         }
 
-        $preprocess_hook = $form_settings['preprocess_hook'] ? $form_settings['preprocess_hook'] : skinr_handler('preprocess_hook_callback', '', $form_settings['preprocess_hook_callback'], $form, $form_state);
+        $preprocess_hooks = $form_settings['preprocess_hook'] ? $form_settings['preprocess_hook'] : skinr_handler('preprocess_hook_callback', '', $form_settings['preprocess_hook_callback'], $form, $form_state);
+        if (!is_array($preprocess_hooks)) {
+          $preprocess_hooks = array($preprocess_hooks);
+        }
 
         if (!$form_state['submitted']) {
           if ($skinr = skinr_handler('data_handler', 'form', $form_settings['data_handler'], $form, $form_state, $theme->name, $module, $form_settings)) {
@@ -279,7 +314,7 @@ function skinr_ui_form_alter(&$form, $form_state, $form_id) {
           $form['skinr_settings'][$module . '_group'] = array(
             '#type' => 'fieldset',
             '#title' => $form_settings['skinr_title'] . ' ' . $form_settings['title'],
-            '#description' => $form_settings['description'] . ' <strong>' . $preprocess_hook . '</strong>.',
+            '#description' => $form_settings['description'] . ' <strong>' . implode(', ', $preprocess_hooks) . '</strong>.',
             '#weight' => $form_settings['weight'],
             '#collapsible' => TRUE,
             '#collapsed' => $form_settings['collapsed'],
@@ -296,6 +331,7 @@ function skinr_ui_form_alter(&$form, $form_state, $form_id) {
           '#collapsed' => $theme->name == $current_theme ? FALSE : TRUE,
         );
         if ($theme->name == $current_theme) {
+          $form['skinr_settings'][$module . '_group'][$theme->name]['#attributes'] = array('class' => array('skinr-ui-current-theme'));
           $form['skinr_settings'][$module . '_group'][$theme->name]['#weight'] = -10;
         }
 
@@ -304,7 +340,7 @@ function skinr_ui_form_alter(&$form, $form_state, $form_id) {
         if (isset($info[$theme->name]['skins'])) {
           foreach ($info[$theme->name]['skins'] as $skin_id => $skin) {
             // Check if this skin applies to this hook.
-            if (!is_array($skin['features']) || (!in_array('*', $skin['features']) && !in_array($preprocess_hook, $skin['features']))) {
+            if (!is_array($skin['features']) || (!in_array('*', $skin['features']) && !_skinr_is_featured($preprocess_hooks, $skin['features']))) {
               continue;
             }
 
@@ -341,7 +377,7 @@ function skinr_ui_form_alter(&$form, $form_state, $form_id) {
             }
 
             // Prepare templates.
-            $templates = skinr_ui_info_templates_filter($skin['templates'], $preprocess_hook);
+            $templates = skinr_ui_info_templates_filter($skin['templates'], $preprocess_hooks);
             $template_options = array_merge($template_options, skinr_ui_info_templates_to_form_options($templates));
           }
         }
@@ -365,7 +401,7 @@ function skinr_ui_form_alter(&$form, $form_state, $form_id) {
             '#title' => t('Template file'),
             '#options' => array_merge(array('' => 'Default'), $template_options),
             '#default_value' => $template_default,
-            '#description' => t('Optionally, select a template file to associate with this <strong>!hook</strong>. Selecting "Default" will let Drupal handle this.', array('!hook' => $preprocess_hook)),
+            '#description' => t('Optionally, select a template file to associate with the hooks <strong>!hooks</strong>. Selecting "Default" will let Drupal handle this.', array('!hooks' => implode(', ', $preprocess_hooks))),
           );
 
           // Only add validation handler once.
@@ -462,16 +498,13 @@ function skinr_ui_preprocess(&$variables, $hook) {
 }
 
 /**
- * Implementation of hook_skinr_preprocess_alter().
  * Set contextual menu items for skinr. We couldn't use hook_block_view_alter()
- * because not all block are allowing the context to be set from there.
+ * because not all blocks are allowing the context to be set from there.
  */
 function skinr_ui_contextual_links(&$variables, $hook, $contextual_links) {
-  $hooks = &drupal_static(__FUNCTION__, NULL);
+  _skinr_ui_set_contextual_links($hook, $contextual_links);
 
-  if (!isset($hooks)) {
-    $hooks = theme_get_registry();
-  }
+  $hooks = theme_get_registry();
 
   // Determine the primary theme function argument.
   if (isset($hooks[$hook]['variables'])) {
@@ -486,8 +519,39 @@ function skinr_ui_contextual_links(&$variables, $hook, $contextual_links) {
   }
 
   if (isset($element) && is_array($element)) {
-    $element['#contextual_links']['skinr'] = $contextual_links;
+    foreach ($contextual_links as $key => $contextual_link) {
+      $element['#contextual_links'][$key] = $contextual_link;
+    }
   }
+}
+
+function skinr_ui_get_contextual_links() {
+  return _skinr_ui_set_contextual_links();
+}
+
+function _skinr_ui_set_contextual_links($hook = NULL, $links = NULL) {
+  static $contextual_links = array();
+
+  if ($hook && $links) {
+    if (!isset($contextual_links[$hook])) {
+      $contextual_links[$hook] = $links;
+    }
+  }
+
+  return $contextual_links;
+}
+
+/**
+ * Helper function determine whether one of a set of hooks exists in a list of
+ * required features.
+ */
+function _skinr_is_featured($preprocess_hooks, $features) {
+  foreach ($preprocess_hooks as $preprocess_hook) {
+    if (in_array($preprocess_hook, $features)) {
+      return TRUE;
+    }
+  }
+  return FALSE;
 }
 
 /**
@@ -517,15 +581,17 @@ function skinr_ui_info_templates_to_form_options($templates) {
 }
 
 /**
- * Helper function to filter templates by preprocess_hook.
+ * Helper function to filter templates by preprocess_hooks.
  */
-function skinr_ui_info_templates_filter($templates, $preprocess_hook) {
+function skinr_ui_info_templates_filter($templates, $preprocess_hooks) {
   $filtered_templates = array();
   foreach ($templates as $template) {
     // If it exists, strip .tpl.php from template.
     $template = str_replace('.tpl.php', '', $template);
-    if (drupal_substr(str_replace('_', '-', $template), (drupal_strlen($preprocess_hook) * -1)) == str_replace('_', '-', $preprocess_hook)) {
-      $filtered_templates[] = $template;
+    foreach ($preprocess_hooks as $preprocess_hook) {
+      if (drupal_substr(str_replace('_', '-', $template), (drupal_strlen($preprocess_hook) * -1)) == str_replace('_', '-', $preprocess_hook)) {
+        $filtered_templates[] = $template;
+      }
     }
   }
   return $filtered_templates;

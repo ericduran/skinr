@@ -7,9 +7,124 @@
  */
 
 /**
+ * Menu callback; displays the skinr listing page.
+ */
+function skinr_ui_list($form, &$form_state) {
+  // Build an 'Update options' form.
+  $form['options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Update options'),
+    '#attributes' => array('class' => array('container-inline')),
+  );
+
+  $options = array();
+  $options['delete'] = t('Delete the selected skinr page rules');
+
+  $form['options']['operation'] = array(
+    '#type' => 'select',
+    '#options' => $options,
+    '#default_value' => 'publish',
+  );
+  $form['options']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Update'),
+  );
+
+  $sorts = array();
+
+  $headers = array(
+    'theme' => array('data' => t('Theme'), 'field' => 'theme'),
+    'type' => array('data' => t('Type'), 'field' => 'type'),
+    'sid' => array('data' => t('Skinr ID'), 'field' => 'sid'),
+    'operations' => array('data' => t('Operations')),
+  );
+
+  $ts = tablesort_init($headers);
+  $sort = SORT_DESC;
+  if ($ts['sort'] == 'asc') {
+    $sort = SORT_ASC;
+  }
+
+  switch ($ts['sql']) {
+    case 'type':
+    case 'sid':
+      $sortby = $ts['sql'];
+      break;
+
+    case 'theme':
+    default:
+      $sortby = 'theme';
+      break;
+  }
+
+  $themes = list_themes();
+  ksort($themes);
+
+  $options = array();
+  $destination = drupal_get_destination();
+
+  foreach ($themes as $theme) {
+    if (!$theme->status) {
+      continue;
+    }
+    $skinrs = skinr_get($theme->name);
+    
+    foreach ($skinrs as $module => $elements) {
+      foreach ($elements as $sid => $skin) {
+        $operations = array(
+          'edit' => array(
+            'data' => array(
+              '#type' => 'link',
+              '#title' => t('edit'),
+              '#href' => 'admin/appearance/skinr/edit/nojs/' . $module . '/' . $sid,
+              '#options' => array('query' => $destination),
+            ),
+          ),
+          'delete' => array(
+            'data' => array(
+              '#type' => 'link',
+              '#title' => t('delete'),
+              '#href' => 'admin/appearance/skinr/delete/'. $theme->name .'/'. $module .'/'. $sid,
+              '#options' => array('query' => $destination),
+            ),
+          ),
+        );
+        $options[$theme->name . '__' . $module . '__' . $sid] = array(
+          'theme' => $theme->info['name'],
+          'type' => $module,
+          'sid' => $sid,
+          'operations' => array(
+            'data' => array(
+              '#theme' => 'links__node_operations',
+              '#links' => $operations,
+              '#attributes' => array('class' => array('links', 'inline')),
+            ),
+          ),
+        );
+        $sorts[] = strip_tags($options[$theme->name . '__' . $module . '__' . $sid][$sortby]);
+      }
+    }
+  }
+  
+  // Sort table.
+  array_multisort($sorts, $sort, $options);
+
+  // Output table.
+  $form['skins'] = array(
+    '#type' => 'tableselect',
+    '#header' => $headers,
+    '#options' => $options,
+    '#empty' => t('No content available.'),
+  );
+  $form['pager'] = array('#markup' => theme('pager', array('tags' => NULL)));
+
+  return $form;
+}
+
+/**
  * Menu callback; displays the skinr settings administration form.
  */
-function skinr_ui_admin_form($form, &$form_state) {
+function skinr_ui_settings($form, &$form_state) {
   $form = array();
 
   $form['overlay'] = array(
@@ -20,26 +135,14 @@ function skinr_ui_admin_form($form, &$form_state) {
   $form['overlay']['skinr_overlay_width'] = array(
     '#type' => 'textfield',
     '#title' => t('Window width'),
-    '#default_value' => variable_get('skinr_overlay_width', NULL),
-    '#description' => t('The width of the overlay window. Leave this field blank to allow the window to automatically resize itself to the width of the browser.'),
+    '#default_value' => variable_get('skinr_overlay_width', 600),
+    '#description' => t('The width of the overlay window. Leave this field blank to allow the window to automatically resize itself to a minimal width.'),
   );
   $form['overlay']['skinr_overlay_height'] = array(
     '#type' => 'textfield',
     '#title' => t('Window height'),
     '#default_value' => variable_get('skinr_overlay_height', NULL),
-    '#description' => t('The width of the overlay window. Leave this field blank to allow the window to automatically resize itself to the width of the browser.'),
-  );
-  $form['overlay']['skinr_overlay_autofit'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Auto fit'),
-    '#default_value' => variable_get('skinr_overlay_autofit', TRUE),
-    '#description' => t('Automatically adjust the width and height to make the contents of the window fit inside it.'),
-  );
-  $form['overlay']['skinr_overlay_draggable'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Draggable'),
-    '#default_value' => variable_get('skinr_overlay_draggable', TRUE),
-    '#description' => t('Make the window draggable, allowing you to move it around on the page.'),
+    '#description' => t('The height of the overlay window. Leave this field blank to allow the window to automatically resize itself to the height of your browser.'),
   );
 
   return system_settings_form($form);
@@ -48,7 +151,7 @@ function skinr_ui_admin_form($form, &$form_state) {
 /**
  * Validation handler for skinr settings administration form.
  */
-function skinr_ui_admin_form_validate(&$form, &$form_state) {
+function skinr_ui_settings_validate(&$form, &$form_state) {
   if (empty($form_state['values']['skinr_overlay_width'])) {
     $form_state['values']['skinr_overlay_width'] = NULL;
   }
@@ -249,4 +352,47 @@ function skinr_ui_import_form_submit(&$form, &$form_state) {
 
   drupal_set_message(t('Skinr settings for the theme %theme have been saved.', array('%theme' => $form_state['values']['theme'])));
   drupal_goto('admin/appearance/skinr');
+}
+
+/**
+ * Menu callback; displays the delete confirmation for a skinr page rule.
+ */
+function skinr_ui_delete_confirm($form, &$form_state, $theme, $module, $sid) {
+  $form['theme'] = array(
+    '#type' => 'value',
+    '#value' => isset($form_state['theme']) ? $form_state['theme'] : $theme,
+  );
+  $form['module'] = array(
+    '#type' => 'value',
+    '#value' => isset($form_state['module']) ? $form_state['module'] : $module,
+  );
+  $form['sid'] = array(
+    '#type' => 'value',
+    '#value' => isset($form_state['sid']) ? $form_state['sid'] : $sid,
+  );
+
+  $themes = list_themes();
+
+  return confirm_form($form,
+    t('Are you sure you want to delete these Skinr settings?'),
+    isset($_GET['destination']) ? $_GET['destination'] : 'admin/appearance/skinr',
+    t('This action cannot be undone.<br /> Theme: !theme<br />Module: !module<br />Skinr ID: !sid', array('!theme' => $themes[$theme]->info['name'], '!module' => $module, '!sid' => $sid)),
+    t('Delete'),
+    t('Cancel')
+  );
+}
+
+function skinr_ui_delete_confirm_submit($form, &$form_state) {
+  if ($form_state['values']['confirm']) {
+    $skinr = new stdClass();
+    $skinr->theme = $form_state['values']['theme'];
+    $skinr->module = $form_state['values']['module'];
+    $skinr->sid = $form_state['values']['sid'];
+    $skinr->skins = array();
+    $skinr->settings = array();
+
+    skinr_set($skinr);
+  }
+
+  $form_state['redirect'] = 'admin/appearance/skinr';
 }

@@ -104,9 +104,11 @@ function comment_skinr_preprocess_index_handler(&$variables) {
  *   @endcode
  */
 function comment_skinr_contextual_links(&$variables) {
-  return array(
+  $links = array();
+  $links['skinr-comment'] = array(
     'admin/appearance/skinr/edit', array('comment', $variables['node']->type),
   );
+  return $links;
 }
 
 /**
