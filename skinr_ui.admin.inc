@@ -7,6 +7,19 @@
  */
 
 /**
+ * Implements hook_skinr_operations().
+ */
+function skinr_ui_skinr_operations() {
+  $operations = array(
+    'delete' => array(
+      'label' => t('Delete selected skinr settings'),
+      'callback' => NULL,
+    ),
+  );
+  return $operations;
+}
+
+/**
  * Menu callback; displays the skinr listing page.
  */
 function skinr_ui_list($form, &$form_state) {
@@ -113,6 +126,48 @@ function skinr_ui_list($form, &$form_state) {
   $form['pager'] = array('#markup' => theme('pager', array('tags' => NULL)));
 
   return $form;
+}
+
+/**
+ * Validate skinr_ui_list form submissions.
+ *
+ * Check if any skinr settings have been selected to perform the chosen
+ * 'Update option' on.
+ */
+function skinr_ui_list_validate($form, &$form_state) {
+  // Error if there are no items to select.
+  if (!is_array($form_state['values']['skins']) || !count(array_filter($form_state['values']['skins']))) {
+    form_set_error('', t('No items selected.'));
+  }
+}
+
+/**
+ * Process skinr_ui_list form submissions.
+ *
+ * Execute the chosen 'Update option' on the selected skinr settings.
+ */
+function skinr_ui_list_submit($form, &$form_state) {
+  $operations = module_invoke_all('skinr_operations');
+  $operation = $operations[$form_state['values']['operation']];
+  // Filter out unchecked nodes
+  $nodes = array_filter($form_state['values']['skins']);
+  if ($function = $operation['callback']) {
+    // Add in callback arguments if present.
+    if (isset($operation['callback arguments'])) {
+      $args = array_merge(array($nodes), $operation['callback arguments']);
+    }
+    else {
+      $args = array($nodes);
+    }
+    call_user_func_array($function, $args);
+
+    cache_clear_all();
+  }
+  else {
+    // We need to rebuild the form to go to a second step. For example, to
+    // show the confirmation form for the deletion of nodes.
+    $form_state['rebuild'] = TRUE;
+  }
 }
 
 /**

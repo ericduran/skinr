@@ -27,7 +27,7 @@ function skinr_ui_permission() {
 function skinr_ui_menu() {
   $items['admin/appearance/skinr'] = array(
     'title' => 'Skinr',
-    'description' => 'Manage your skinr settings and page rules, import and export skinr settings for each theme, and configure skinr\'s overlay settings.',
+    'description' => 'Manage your skinr settings and rules, import and export skinr settings for each theme, and configure skinr\'s overlay settings.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('skinr_ui_list'),
     'access arguments' => array('administer skinr'),
@@ -39,9 +39,9 @@ function skinr_ui_menu() {
     'weight' => -10,
   );
 
-  // Page rules.
-  $items['admin/appearance/skinr/page'] = array(
-    'title' => 'Page rules',
+  // Rules.
+  $items['admin/appearance/skinr/rule'] = array(
+    'title' => 'Rules',
     'page callback' => 'skinr_rules',
     'type' => MENU_LOCAL_TASK,
     'access arguments' => array('administer skinr'),
@@ -49,24 +49,24 @@ function skinr_ui_menu() {
     'weight' => 1,
     'file' => 'skinr_ui.rules.inc',
   );
-  $items['admin/appearance/skinr/page/add'] = array(
-    'title' => 'Add Skinr page rule',
+  $items['admin/appearance/skinr/rule/add'] = array(
+    'title' => 'Add Skinr rule',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('skinr_rule_add'),
+    'type' => MENU_CALLBACK,
+    'access arguments' => array('administer skinr'),
+    'file' => 'skinr_ui.rules.inc',
+  );
+  $items['admin/appearance/skinr/rule/edit'] = array(
+    'title' => 'Edit Skinr rule',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('skinr_rule_edit'),
     'type' => MENU_CALLBACK,
     'access arguments' => array('administer skinr'),
     'file' => 'skinr_ui.rules.inc',
   );
-  $items['admin/appearance/skinr/page/edit'] = array(
-    'title' => 'Edit Skinr page rule',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('skinr_rule_edit'),
-    'type' => MENU_CALLBACK,
-    'access arguments' => array('administer skinr'),
-    'file' => 'skinr_ui.rules.inc',
-  );
-  $items['admin/appearance/skinr/page/delete'] = array(
-    'title' => 'Add Skinr page rule',
+  $items['admin/appearance/skinr/rule/delete'] = array(
+    'title' => 'Delete Skinr rule',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('skinr_rule_delete_confirm'),
     'type' => MENU_CALLBACK,
@@ -155,7 +155,7 @@ function skinr_ui_menu() {
 function skinr_ui_help($path, $arg) {
   switch ($path) {
     case 'admin/appearance/skinr':
-    case 'admin/appearance/skinr/page':
+    case 'admin/appearance/skinr/rule':
       if (module_exists('advanced_help')) {
         return t('Visit the <a href="@skinr-help">help page</a> for full documentation.', array('@skinr-help' => url('admin/advanced_help/skinr')));
       }
@@ -286,7 +286,7 @@ function skinr_ui_form_alter(&$form, $form_state, $form_id) {
           );
         }
 
-        $preprocess_hooks = $form_settings['preprocess_hook'] ? $form_settings['preprocess_hook'] : skinr_handler('preprocess_hook_callback', '', $form_settings['preprocess_hook_callback'], $form, $form_state);
+        $preprocess_hooks = isset($form_settings['preprocess_hook']) ? $form_settings['preprocess_hook'] : skinr_handler('preprocess_hook_callback', '', $form_settings['preprocess_hook_callback'], $form, $form_state);
         if (!is_array($preprocess_hooks)) {
           $preprocess_hooks = array($preprocess_hooks);
         }

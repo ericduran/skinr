@@ -255,27 +255,29 @@ function skinr_rule_save($rule) {
  * Load a skinr page rule object.
  */
 function skinr_rule_load($rid = NULL) {
-  if (is_null($rid)) {
-    $rules = array();
+  $rids = (isset($rid) ? array($rid) : array());
+  $rule = skinr_rule_load_multiple($rids);
+  return !empty($rule) ? $rule[0] : FALSE;
+}
 
-    $result = db_query("SELECT * FROM {skinr_rules}");
-    foreach ($result as $rule) {
-      $rule->roles = unserialize($rule->roles);
-      $rules[] = $rule;
-    }
+function skinr_rule_load_multiple($rids = array(), $conditions = array()) {
+  $rules = array();
+  
+  $select = db_select('skinr_rules')->fields('skinr_rules');
+  if (!empty($rids)) {
+    $select->condition('rid', $rids);
+  }
+  foreach ($conditions as $field => $condition) {
+    $select->condition($field, $condition);
+  }
 
-    return $rules;
+  $result = $select->execute();
+  foreach ($result as $rule) {
+    $rule->roles = unserialize($rule->roles);
+    $rules[] = $rule;
   }
-  else {
-    $rule = db_query("SELECT * FROM {skinr_rules} WHERE rid = :rid", array(
-      ':rid' => $rid,
-    ))->fetchObject();
-    if ($rule) {
-      $rule->roles = unserialize($rule->roles);
-      return $rule;
-    }
-    return FALSE;
-  }
+
+  return $rules;
 }
 
 /**

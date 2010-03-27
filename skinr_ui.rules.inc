@@ -7,36 +7,41 @@
  */
 
 /**
- * Menu callback; displays the skinr page rules listing.
+ * Menu callback; displays the skinr rules listing.
  */
 function skinr_rules() {
   $output = '';
 
-  $headers = array(t('Title'), array('data' => t('Operations'), 'colspan' => 2));
+  $headers = array(
+    array('data' => t('Title'), 'field' => 'title'),
+    array('data' => t('Type'), 'field' => 'type'),
+    array('data' => t('Operations'), 'colspan' => 2)
+  );
 
-  $rules = skinr_rule_load();
+  $rules = skinr_rule_load_multiple();
   $rows = array();
   foreach ($rules as $rule) {
     $row = array(
       check_plain($rule->title),
-      l(t('edit'), 'admin/appearance/skinr/page/edit/'. $rule->rid),
-      l(t('delete'), 'admin/appearance/skinr/page/delete/'. $rule->rid),
+      check_plain($rule->rule_type),
+      l(t('edit'), 'admin/appearance/skinr/rule/edit/'. $rule->rid),
+      l(t('delete'), 'admin/appearance/skinr/rule/delete/'. $rule->rid),
     );
     $rows[] = $row;
   }
 
-  $link = l(t('Create a new rule'), 'admin/appearance/skinr/page/add');
+  $link = l(t('Create a new rule'), 'admin/appearance/skinr/rule/add');
   $row = array();
   if (empty($rows)) {
     $row[] = array(
-      'data' => t('No page rules have been set up yet. !url.', array('!url' => $link)),
-      'colspan' => 3,
+      'data' => t('No rules have been set up yet. !url.', array('!url' => $link)),
+      'colspan' => 4,
     );
   }
   else {
     $row[] = array(
       'data' => t('!url.', array('!url' => $link)),
-      'colspan' => 3,
+      'colspan' => 4,
     );
   }
   $rows[] = $row;
@@ -48,13 +53,73 @@ function skinr_rules() {
 }
 
 /**
- * Menu callback; displays the edit form for a skinr page rule.
+ * Menu callback; displays the edit form for a skinr rule.
+ */
+function skinr_rule_add($form, &$form_state) {
+  $form = array();
+  $form['rule'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Skinr rule visibility'),
+    '#collapsible' => TRUE,
+    '#weight' => -1,
+  );
+  $form['rule']['title'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Title'),
+    '#default_value' => !empty($form_state['values']['title']) ? $form_state['values']['title'] : '',
+    '#description' => t('Descriptive title for this rule; used by administrators.'),
+    '#required' => TRUE,
+  );
+  
+  $regions = array();
+  foreach (list_themes() as $key => $theme) {
+    $regions += system_region_list($key);
+  }
+  $options = array('page' => t('Page'));
+  foreach ($regions as $key => $region) {
+    $options['region__' . $key] = t('Region') . ': ' . $region;
+  }
+  $form['rule']['rule_type'] = array(
+    '#type' => 'select',
+    '#title' => t('Type'),
+    '#default_value' => !empty($form_state['values']['rule_type']) ? $form_state['values']['rule_type'] : '',
+    '#options' => $options,
+    '#description' => t('Type of element the rule is applied to.'),
+    '#required' => TRUE,
+  );
+
+  $form['buttons']['save'] = array(
+    '#type' => 'submit',
+    '#value' => t('Add'),
+  );
+
+  return $form;
+}
+
+function skinr_rule_add_submit($form, &$form_state) {
+  $rule = new stdClass();
+  $rule->rid = NULL;
+  $rule->rule_type = $form_state['values']['rule_type'];
+  $rule->title = $form_state['values']['title'];
+  $rule->roles = array();
+  $rule->visibility = 0;
+  $rule->pages = '';
+
+  skinr_rule_save($rule);
+  // Set rule id, if we inserted a new rule to allow others to know what rule they're working with.
+  $form_state['values']['rid'] = $rule->rid;
+
+  $form_state['redirect'] = 'admin/appearance/skinr/rule/edit/' . $rule->rid;
+}
+
+/**
+ * Menu callback; displays the edit form for a skinr rule.
  */
 function skinr_rule_edit($form, &$form_state, $rid = NULL) {
   $form = array();
   $form['rule'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Skinr page rule visibility'),
+    '#title' => t('Skinr rule visibility'),
     '#collapsible' => TRUE,
     '#weight' => -1,
   );
@@ -62,6 +127,7 @@ function skinr_rule_edit($form, &$form_state, $rid = NULL) {
   if (isset($form_state['values'])) {
     $rule = array(
       'title' => $form_state['values']['title'],
+      'rule_type' => $form_state['values']['rule_type'],
       'roles' => $form_state['values']['roles'],
       'visibility' => $form_state['values']['visibility'],
       'pages' => $form_state['values']['pages'],
@@ -70,13 +136,14 @@ function skinr_rule_edit($form, &$form_state, $rid = NULL) {
   elseif(!is_null($rid) && $rule = skinr_rule_load($rid)) {
     $rule = (array) $rule;
     $form['rule']['rid'] = array(
-      '#type' => 'hidden',
+      '#type' => 'value',
       '#value' => $rid,
     );
   }
   else {
     $rule = array(
       'title' => '',
+      'rule_type' => '',
       'roles' => array(),
       'visibility' => 0,
       'pages' => '',
@@ -87,11 +154,22 @@ function skinr_rule_edit($form, &$form_state, $rid = NULL) {
     '#type' => 'textfield',
     '#title' => t('Title'),
     '#default_value' => $rule['title'],
-    '#description' => t('Descriptive title for this page rule; used by administrators.'),
+    '#description' => t('Descriptive title for this rule; used by administrators.'),
     '#required' => TRUE,
   );
 
-  // Inject the page level form elements here.
+  $form['rule']['rule_type'] = array(
+    '#type' => 'hidden',
+    '#value' => $rule['rule_type'],
+  );
+  $form['rule']['rule_type_displayed'] = array(
+    '#type' => 'item',
+    '#title' => t('Type'),
+    '#markup' => $rule['rule_type'],
+    '#description' => t('Type of element the rule is applied to.'),
+  );
+
+  // Inject the rule's form elements here.
   $form['rule']['roles'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Show for specific roles'),
@@ -141,6 +219,7 @@ function skinr_rule_edit($form, &$form_state, $rid = NULL) {
 function skinr_rule_edit_submit($form, &$form_state) {
   $rule = new stdClass();
   $rule->rid = !empty($form_state['values']['rid']) ? $form_state['values']['rid'] : NULL;
+  $rule->rule_type = $form_state['values']['rule_type'];
   $rule->title = $form_state['values']['title'];
   $rule->roles = $form_state['values']['roles'];
   $rule->visibility = $form_state['values']['visibility'];
@@ -150,7 +229,7 @@ function skinr_rule_edit_submit($form, &$form_state) {
   // Set rule id, if we inserted a new rule to allow others to know what rule they're working with.
   $form_state['values']['rid'] = $rule->rid;
 
-  $form_state['redirect'] = 'admin/appearance/skinr/page';
+  $form_state['redirect'] = 'admin/appearance/skinr/rule';
 }
 
 function skinr_rule_delete_submit($form, &$form_state) {
@@ -159,11 +238,11 @@ function skinr_rule_delete_submit($form, &$form_state) {
     $destination = drupal_get_destination();
     unset($_REQUEST['destination']);
   }
-  $form_state['redirect'] = array('admin/appearance/skinr/page/delete/'. $form_state['values']['rid'], $destination);
+  $form_state['redirect'] = array('admin/appearance/skinr/rule/delete/'. $form_state['values']['rid'], $destination);
 }
 
 /**
- * Menu callback; displays the delete confirmation for a skinr page rule.
+ * Menu callback; displays the delete confirmation for a skinr rule.
  */
 function skinr_rule_delete_confirm($form, &$form_state, $rid) {
   $form['rid'] = array(
@@ -174,7 +253,7 @@ function skinr_rule_delete_confirm($form, &$form_state, $rid) {
   $rule = skinr_rule_load($rid);
   return confirm_form($form,
     t('Are you sure you want to delete %title?', array('%title' => $rule->title)),
-    isset($_GET['destination']) ? $_GET['destination'] : 'admin/appearance/skinr/page',
+    isset($_GET['destination']) ? $_GET['destination'] : 'admin/appearance/skinr/rule',
     t('This action cannot be undone.'),
     t('Delete'),
     t('Cancel')
@@ -186,5 +265,5 @@ function skinr_rule_delete_confirm_submit($form, &$form_state) {
     skinr_rule_delete($form_state['values']['rid']);
   }
 
-  $form_state['redirect'] = 'admin/appearance/skinr/page';
+  $form_state['redirect'] = 'admin/appearance/skinr/rule';
 }

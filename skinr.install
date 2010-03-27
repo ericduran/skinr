@@ -72,6 +72,13 @@ function skinr_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
+      'rule_type' => array(
+        'description' => 'The content type of this rule.',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
       'roles' => array(
         'type' => 'text',
         'size' => 'normal',
@@ -141,5 +148,35 @@ function skinr_update_7001() {
     }
   }
 
-  return t('New Skinr tables haev been created, and all old variables converted to the new db system.');
+  return t('New Skinr tables have been created, and all old variables converted to the new db system.');
+}
+
+/**
+ * Install a new field in {skinr_rules} table.
+ */
+function skinr_update_7002() {
+  if (db_table_exists('skinr_rules')) {
+    $schema = array(
+      'description' => 'The content type of this rule.',
+      'type' => 'varchar',
+      'length' => 128,
+      'not null' => TRUE,
+      'default' => '',
+    );
+
+    db_add_field('skinr_rules', 'rule_type', $schema);
+    db_update('skinr_rules')
+      ->fields(array(
+        'type' => 'page',
+      ))
+      ->execute();
+    db_update('skinr')
+      ->fields(array(
+        'module' => 'rules',
+      ))
+      ->condition('module', 'page')
+      ->execute();
+
+    drupal_set_message("A type field has been added to Skinr's Rules table.");
+  }
 }
