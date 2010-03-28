@@ -156,7 +156,7 @@ function rules_skinr_contextual_links(&$variables) {
   foreach ($rules as $rule) {
     if (skinr_rule_visible($rule->rid)) {
       $links['skinr-rule-' . $counter++] = array(
-        'admin/appearance/skinr/edit', array('page', $rule->rid),
+        'admin/config/skinr/edit', array('page', $rule->rid),
       );
     }
   }
