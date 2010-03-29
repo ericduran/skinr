@@ -87,12 +87,12 @@ function skinr_ui_list($form, &$form_state) {
         $operations = array(
           'edit' => array(
             'title' => t('edit'),
-            'href' => 'admin/config/skinr/edit/nojs/' . $module . '/' . $sid,
+            'href' => 'admin/appearance/skinr/edit/nojs/' . $module . '/' . $sid,
             'query' => $destination,
           ),
           'delete' => array(
             'title' => t('delete'),
-            'href' => 'admin/config/skinr/delete/'. $theme->name .'/'. $module .'/'. $sid,
+            'href' => 'admin/appearance/skinr/delete/'. $theme->name .'/'. $module .'/'. $sid,
             'query' => $destination,
           ),
         );
@@ -296,7 +296,7 @@ function skinr_ui_export_form_validate(&$form, &$form_state) {
  * Submit handler for skinr settings export form.
  */
 function skinr_ui_export_form_submit(&$form, &$form_state) {
-  drupal_goto('admin/config/skinr/settings/export/' . str_replace('_', '-', $form_state['values']['theme']));
+  drupal_goto('admin/appearance/skinr/export/' . str_replace('_', '-', $form_state['values']['theme']));
 }
 
 /**
@@ -400,7 +400,7 @@ function skinr_ui_import_form_submit(&$form, &$form_state) {
   }
 
   drupal_set_message(t('Skinr settings for the theme %theme have been saved.', array('%theme' => $form_state['values']['theme'])));
-  drupal_goto('admin/config/skinr');
+  drupal_goto('admin/appearance/skinr');
 }
 
 /**
@@ -424,7 +424,7 @@ function skinr_ui_delete_confirm($form, &$form_state, $theme, $module, $sid) {
 
   return confirm_form($form,
     t('Are you sure you want to delete these Skinr settings?'),
-    isset($_GET['destination']) ? $_GET['destination'] : 'admin/config/skinr',
+    isset($_GET['destination']) ? $_GET['destination'] : 'admin/appearance/skinr',
     t('This action cannot be undone.<br /> Theme: !theme<br />Module: !module<br />Skinr ID: !sid', array('!theme' => $themes[$theme]->info['name'], '!module' => $module, '!sid' => $sid)),
     t('Delete'),
     t('Cancel')
@@ -443,5 +443,5 @@ function skinr_ui_delete_confirm_submit($form, &$form_state) {
     skinr_set($skinr);
   }
 
-  $form_state['redirect'] = 'admin/config/skinr';
+  $form_state['redirect'] = 'admin/appearance/skinr';
 }

@@ -106,7 +106,7 @@ function comment_skinr_preprocess_index_handler(&$variables) {
 function comment_skinr_contextual_links(&$variables) {
   $links = array();
   $links['skinr-comment'] = array(
-    'admin/config/skinr/edit', array('comment', $variables['node']->type),
+    'admin/appearance/skinr/edit', array('comment', $variables['node']->type),
   );
   return $links;
 }
