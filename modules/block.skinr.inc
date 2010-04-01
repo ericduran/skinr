@@ -66,19 +66,7 @@ function block_skinr_form_index_handler($op, &$form, $form_state) {
       return $form['module']['#value'] . '-' . $form['delta']['#value'];
 
     case 'submit':
-      $form_id = $form['form_id']['#value'];
-      if ($form_id == 'block_add_block_form') {
-        // This is a new block, so we need to fetch the delta from DB
-        $delta = db_query("SELECT delta FROM {blocks} WHERE bid = :bid", array(
-          ':bid' => db_last_insert_id('boxes', 'bid'),
-        ))->fetchField();
-        if ($delta) {
-          return $form_state['values']['module'] . '-' . $delta;
-        }
-      }
-      else {
-        return $form_state['values']['module'] . '-' . $form_state['values']['delta'];
-      }
+      return $form_state['values']['module'] . '-' . $form_state['values']['delta'];
   }
 }
 
