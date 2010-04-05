@@ -37,7 +37,7 @@ function skinr_ui_menu() {
   $items['admin/appearance/skinr/list'] = array(
     'title' => 'List',
     'type' => MENU_DEFAULT_LOCAL_TASK,
-    'parent' => 'admin/settings/skinr',
+    'parent' => 'admin/appearance/skinr',
     'description' => t('Manage Skinr settings.'),
     'weight' => -10,
   );
@@ -48,7 +48,7 @@ function skinr_ui_menu() {
     'page callback' => 'skinr_rules',
     'type' => MENU_LOCAL_TASK,
     'access arguments' => array('administer skinr'),
-    'parent' => 'admin/settings/skinr',
+    'parent' => 'admin/appearance/skinr',
     'weight' => 1,
     'description' => t('Configure region and page level Skinr rules.'),
     'file' => 'skinr_ui.rules.inc',
