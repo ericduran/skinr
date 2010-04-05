@@ -51,9 +51,9 @@ function skinr_preprocess(&$variables, $hook) {
           _skinr_add_file($file['path'], 'js');
         }
         if (!empty($extracted['template'])) {
-          $vars['template_files'][] = $extracted['template'];
+          $variables['theme_hook_suggestions'][] = $extracted['template'];
         }
-        $vars['skinr'] = implode(' ', $extracted['classes']);
+        $variables['skinr'] = implode(' ', $extracted['classes']);
 
         $variables['skinr'] = $extracted['classes'];
         $variables['classes_array'] = array_merge($variables['classes_array'], $variables['skinr']);
@@ -61,14 +61,14 @@ function skinr_preprocess(&$variables, $hook) {
         // Need to add a hook for skinr_ui to plug into.
         $data = array(
           'hook' => $hook,
-          'vars' => &$variables,
+          'variables' => &$variables,
           'skin' => &$extracted,
         );
         drupal_alter('skinr_preprocess', $data);
 
         // Reset styles to make sure all are included.
-        $vars['styles'] = drupal_get_css();
-        $vars['scripts'] = drupal_get_js();
+        $variables['styles'] = drupal_get_css();
+        $variables['scripts'] = drupal_get_js();
       }
     }
   }
