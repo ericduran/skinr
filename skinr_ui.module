@@ -327,8 +327,8 @@ function skinr_ui_form_alter(&$form, $form_state, $form_id) {
         if (!isset($form['skinr_settings'][$module . '_group'])) {
           $form['skinr_settings'][$module . '_group'] = array(
             '#type' => 'fieldset',
-            '#title' => $form_settings['skinr_title'] . ' ' . $form_settings['title'],
-            '#description' => $form_settings['description'] . ' <strong>' . implode(', ', $preprocess_hooks) . '</strong>.',
+            '#title' => t('@skinr_title @title', array('@skinr_title' => $form_settings['skinr_title'], '@title' => $form_settings['title'])),
+            '#description' => t($form_settings['description']) . ' <strong>' . implode(', ', $preprocess_hooks) . '</strong>.',
             '#weight' => $form_settings['weight'],
             '#collapsible' => TRUE,
             '#collapsed' => $form_settings['collapsed'],
