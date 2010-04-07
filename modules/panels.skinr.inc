@@ -385,8 +385,8 @@ function panels_skinr_ajax_preprocess_hook_callback(&$form, $form_state) {
  */
 function panels_skinr_preprocess_index_handler(&$variables) {
   $index = '';
-  if ($variables['pane']->style['style'] == 'skinr') {
-    $index =  'display-'. $variables['pane']->did .'-pane-'. $variables['pane']->pid;
+  if (isset($variables['pane']->style['style']) && $variables['pane']->style['style'] == 'skinr') {
+    $index = 'display-'. $variables['pane']->did .'-pane-'. $variables['pane']->pid;
   }
   return $index;
 }
