@@ -157,6 +157,18 @@ function skinr_ui_menu() {
 }
 
 /**
+ * Implementation of hook_theme().
+ */
+function skinr_ui_theme() {
+  return array(
+    'skinr_ui_filters' => array(
+      'render element' => 'form',
+      'file' => 'skinr_ui.admin.inc',
+    ),
+  );
+}
+
+/**
  * Implementation of hook_help().
  */
 function skinr_ui_help($path, $arg) {
