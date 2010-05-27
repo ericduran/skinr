@@ -20,197 +20,13 @@ function skinr_ui_skinr_operations() {
 }
 
 /**
- * List skinr administration filters that can be applied.
- */
-function skinr_ui_filters() {
-  // Theme filter.
-  $themes = list_themes();
-  ksort($themes);
-
-  $options = array('[any]' => t('any'));
-  foreach ($themes as $theme) {
-    if (!$theme->status) {
-      continue;
-    }
-    $options[$theme->name] = $theme->info['name'];
-  }
-
-  $filters['theme'] = array(
-    'title' => t('theme'),
-    'options' => $options,
-  );
-
-  // Type filter.
-  $config = skinr_fetch_config();
-
-  $options = array('[any]' => t('any'));
-  foreach ($config as $type => $data) {
-    $options[$type] = $type;
-  }
-
-  $filters['type'] = array(
-    'title' => t('type'),
-    'options' => $options,
-  );
-
-  return $filters;
-}
-
-/**
- * Return form for skinr administration filters.
- */
-function skinr_ui_filter_form() {
-  $session = isset($_SESSION['skinr_ui_overview_filter']) ? $_SESSION['skinr_ui_overview_filter'] : array();
-  $filters = skinr_ui_filters();
-
-  $i = 0;
-  $form['filters'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Show only items where'),
-    '#theme' => 'skinr_ui_filters',
-  );
-  foreach ($session as $filter) {
-    list($type, $value) = $filter;
-    $value = $filters[$type]['options'][$value];
-
-    if ($i++) {
-      $form['filters']['current'][] = array('#markup' => t('<em>and</em> where <strong>%type</strong> is <strong>%value</strong>', array('%type' => $filters[$type]['title'], '%value' => $value)));
-    }
-    else {
-      $form['filters']['current'][] = array('#markup' => t('<strong>%type</strong> is <strong>%value</strong>', array('%type' => $filters[$type]['title'], '%value' => $value)));
-    }
-    if (in_array($type, array('theme', 'type'))) {
-      // Remove the option if it is already being filtered on.
-      unset($filters[$type]);
-    }
-  }
-
-  foreach ($filters as $key => $filter) {
-    $names[$key] = $filter['title'];
-    $form['filters']['status'][$key] = array(
-      '#type' => 'select',
-      '#options' => $filter['options'],
-      '#title' => $filter['title'],
-      '#default_value' => '[any]',
-    );
-  }
-
-  $form['filters']['actions'] = array(
-    '#type' => 'actions',
-    '#id' => 'skinr-ui-admin-buttons',
-    '#attributes' => array('class' => array('container-inline')),
-  );
-  if (count($filters)) {
-    $form['filters']['actions']['submit'] = array('#type' => 'submit', '#value' => (count($session) ? t('Refine') : t('Filter')));
-  }
-  if (count($session)) {
-    $form['filters']['actions']['undo'] = array('#type' => 'submit', '#value' => t('Undo'));
-    $form['filters']['actions']['reset'] = array('#type' => 'submit', '#value' => t('Reset'));
-  }
-
-  drupal_add_js('misc/form.js');
-
-  return $form;
-}
-
-/**
- * Returns HTML for a node administration filter selector.
- *
- * @param $variables
- *   An associative array containing:
- *   - form: A render element representing the form.
- *
- * @ingroup themeable
- */
-function theme_skinr_ui_filters($variables) {
-  $form = $variables['form'];
-  $output = '';
-
-  $output .= '<ul class="clearfix">';
-  if (!empty($form['current'])) {
-    foreach (element_children($form['current']) as $key) {
-      $output .= '<li>' . drupal_render($form['current'][$key]) . '</li>';
-    }
-  }
-  $output .= '</ul>';
-
-  $output .= '<div class="clearfix">';
-
-  if (!empty($form['status']) && count(element_children($form['status']))) {
-    $output .= '<dl class="multiselect">' . (!empty($form['current']) ? '<dt><em>' . t('and') . '</em> ' . t('where') . '</dt>' : '');
-  
-    $output .= '<dd>';
-  
-    foreach (element_children($form['status']) as $key) {
-      $output .= drupal_render($form['status'][$key]);
-    }
-    $output .= '</dd>';
-  
-    $output .= '</dl>';
-  }
-  $output .= drupal_render($form['actions']);
-
-  $output .= '</div>';
-
-  return $output;
-}
-
-/**
- * Process result from node administration filter form.
- */
-function skinr_ui_filter_form_submit($form, &$form_state) {
-  $filters = skinr_ui_filters();
-  switch ($form_state['values']['op']) {
-    case t('Filter'):
-    case t('Refine'):
-      // Apply every filter that has a choice selected other than 'any'.
-      foreach ($filters as $filter => $options) {
-        if (isset($form_state['values'][$filter]) && $form_state['values'][$filter] != '[any]') {
-          // Flatten the options array to accommodate hierarchical/nested options.
-          $flat_options = form_options_flatten($filters[$filter]['options']);
-          // Only accept valid selections offered on the dropdown, block bad input.
-          if (isset($flat_options[$form_state['values'][$filter]])) {
-            $_SESSION['skinr_ui_overview_filter'][] = array($filter, $form_state['values'][$filter]);
-          }
-        }
-      }
-      break;
-    case t('Undo'):
-      array_pop($_SESSION['skinr_ui_overview_filter']);
-      break;
-    case t('Reset'):
-      $_SESSION['skinr_ui_overview_filter'] = array();
-      break;
-  }
-}
-
-/**
  * Menu callback; displays the skinr listing page.
  */
 function skinr_ui_list($form, &$form_state) {
   if (isset($form_state['values']['operation']) && $form_state['values']['operation'] == 'delete') {
     return skinr_ui_multiple_delete_confirm($form, $form_state, array_filter($form_state['values']['skins']));
   }
-  $form['filter'] = skinr_ui_filter_form();
-  $form['#submit'][] = 'skinr_ui_filter_form_submit';
-  $form['admin'] = skinr_ui_admin_skins();
   
-  drupal_add_css(drupal_get_path('module', 'skinr') . '/css/skinr_ui.css');
-
-  return $form;
-}
-
-/**
- * Form builder: Builds the node administration overview.
- */
-function skinr_ui_admin_skins() {
-  $session = !empty($_SESSION['skinr_ui_overview_filter']) && is_array($_SESSION['skinr_ui_overview_filter']) ? $_SESSION['skinr_ui_overview_filter'] : array();
-  $filters = array();
-  foreach ($session as $filter) {
-    list($key, $value) = $filter;
-    $filters[$key] = $value;
-  }
-
   // Build an 'Update options' form.
   $form['options'] = array(
     '#type' => 'fieldset',
@@ -229,8 +45,6 @@ function skinr_ui_admin_skins() {
   $form['options']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Update'),
-    '#validate' => array('skinr_ui_admin_skins_validate'),
-    '#submit' => array('skinr_ui_admin_skins_submit'),
   );
 
   $sorts = array();
@@ -265,18 +79,12 @@ function skinr_ui_admin_skins() {
 
   $options = array();
   $destination = drupal_get_destination();
-  $type = !empty($filters['type']) ? $filters['type'] : NULL;
 
   foreach ($themes as $theme) {
-    if (!$theme->status || !empty($theme->info['hidden']) || (!empty($filters['theme']) && $filters['theme'] != $theme->name)) {
+    if (!$theme->status || !empty($theme->info['hidden'])) {
       continue;
     }
-    if (empty($type)) {
-      $skinrs = skinr_get($theme->name);
-    }
-    else {
-      $skinrs = array($type => skinr_get($theme->name, $type));
-    }
+    $skinrs = skinr_get($theme->name);
 
     foreach ($skinrs as $module => $elements) {
       foreach ($elements as $sid => $skin) {
@@ -330,7 +138,7 @@ function skinr_ui_admin_skins() {
  * Check if any skinr settings have been selected to perform the chosen
  * 'Update option' on.
  */
-function skinr_ui_admin_skins_validate($form, &$form_state) {
+function skinr_ui_list_validate($form, &$form_state) {
   // Error if there are no items to select.
   if (!is_array($form_state['values']['skins']) || !count(array_filter($form_state['values']['skins']))) {
     form_set_error('', t('No items selected.'));
@@ -342,7 +150,7 @@ function skinr_ui_admin_skins_validate($form, &$form_state) {
  *
  * Execute the chosen 'Update option' on the selected skinr settings.
  */
-function skinr_ui_admin_skins_submit($form, &$form_state) {
+function skinr_ui_list_submit($form, &$form_state) {
   $operations = module_invoke_all('skinr_operations');
   $operation = $operations[$form_state['values']['operation']];
   // Filter out unchecked nodes
@@ -364,57 +172,6 @@ function skinr_ui_admin_skins_submit($form, &$form_state) {
     // show the confirmation form for the deletion of nodes.
     $form_state['rebuild'] = TRUE;
   }
-}
-
-function skinr_ui_multiple_delete_confirm($form, &$form_state, $skins) {
-  $themes = list_themes();
-
-  $form['skins'] = array('#prefix' => '<ul>', '#suffix' => '</ul>', '#tree' => TRUE);
-  // array_filter returns only elements with TRUE values
-  foreach ($skins as $skin => $value) {
-    $parts = explode('__', $skin, 3);
-    $form['skins'][$skin] = array(
-      '#type' => 'hidden',
-      '#value' => $skin,
-      '#prefix' => '<li>',
-      '#suffix' => t('Skinr ID %sid of type %type for theme %theme', array('%sid' => $parts[2], '%type' => $parts[1], '%theme' => $themes[$parts[0]]->info['name'])) ."</li>\n",
-    );
-  }
-  $form['operation'] = array('#type' => 'hidden', '#value' => 'delete');
-  $form['#submit'][] = 'skinr_ui_multiple_delete_confirm_submit';
-  $confirm_question = format_plural(count($skins),
-                                  'Are you sure you want to delete this item?',
-                                  'Are you sure you want to delete these items?');
-  return confirm_form($form,
-                    $confirm_question,
-                    'admin/appearance/skinr', t('This action cannot be undone.'),
-                    t('Delete'), t('Cancel'));
-}
-
-function skinr_ui_multiple_delete_confirm_submit($form, &$form_state) {
-  if ($form_state['values']['confirm']) {
-    foreach ($form_state['values']['skins'] as $skin => $value) {
-      $parts = explode('__', $skin, 3);
-
-      $skinr = new StdClass();
-      $skinr->theme = $parts[0];
-      $skinr->module = $parts[1];
-      $skinr->sid = $parts[2];
-      $skinr->skins = array();
-
-      skinr_set($skinr);
-    }
-    
-    $count = count($form_state['values']['skins']);
-    if ($count == 1) {
-      watchdog('content', 'Deleted 1 skinr setting.');
-    }
-    else {
-      watchdog('content', 'Deleted @count skinr settings.', array('@count' => $count));
-    }
-    drupal_set_message(format_plural($count, 'Deleted 1 skinr setting.', 'Deleted @count skinr settings.'));
-  }
-  $form_state['redirect'] = 'admin/appearance/skinr';
 }
 
 /**
@@ -697,5 +454,56 @@ function skinr_ui_delete_confirm_submit($form, &$form_state) {
     skinr_set($skinr);
   }
 
+  $form_state['redirect'] = 'admin/appearance/skinr';
+}
+
+function skinr_ui_multiple_delete_confirm($form, &$form_state, $skins) {
+  $themes = list_themes();
+
+  $form['skins'] = array('#prefix' => '<ul>', '#suffix' => '</ul>', '#tree' => TRUE);
+  // array_filter returns only elements with TRUE values
+  foreach ($skins as $skin => $value) {
+    $parts = explode('__', $skin, 3);
+    $form['skins'][$skin] = array(
+      '#type' => 'hidden',
+      '#value' => $skin,
+      '#prefix' => '<li>',
+      '#suffix' => t('Skinr ID %sid of type %type for theme %theme', array('%sid' => $parts[2], '%type' => $parts[1], '%theme' => $themes[$parts[0]]->info['name'])) ."</li>\n",
+    );
+  }
+  $form['operation'] = array('#type' => 'hidden', '#value' => 'delete');
+  $form['#submit'][] = 'skinr_ui_multiple_delete_confirm_submit';
+  $confirm_question = format_plural(count($skins),
+                                  'Are you sure you want to delete this item?',
+                                  'Are you sure you want to delete these items?');
+  return confirm_form($form,
+                    $confirm_question,
+                    'admin/appearance/skinr', t('This action cannot be undone.'),
+                    t('Delete'), t('Cancel'));
+}
+
+function skinr_ui_multiple_delete_confirm_submit($form, &$form_state) {
+  if ($form_state['values']['confirm']) {
+    foreach ($form_state['values']['skins'] as $skin => $value) {
+      $parts = explode('__', $skin, 3);
+
+      $skinr = new StdClass();
+      $skinr->theme = $parts[0];
+      $skinr->module = $parts[1];
+      $skinr->sid = $parts[2];
+      $skinr->skins = array();
+
+      skinr_set($skinr);
+    }
+    
+    $count = count($form_state['values']['skins']);
+    if ($count == 1) {
+      watchdog('content', 'Deleted 1 skinr setting.');
+    }
+    else {
+      watchdog('content', 'Deleted @count skinr settings.', array('@count' => $count));
+    }
+    drupal_set_message(format_plural($count, 'Deleted 1 skinr setting.', 'Deleted @count skinr settings.'));
+  }
   $form_state['redirect'] = 'admin/appearance/skinr';
 }
