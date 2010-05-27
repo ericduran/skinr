@@ -23,6 +23,10 @@ function skinr_ui_skinr_operations() {
  * Menu callback; displays the skinr listing page.
  */
 function skinr_ui_list($form, &$form_state) {
+  if (isset($form_state['values']['operation']) && $form_state['values']['operation'] == 'delete') {
+    return skinr_ui_multiple_delete_confirm($form, $form_state, array_filter($form_state['values']['skins']));
+  }
+  
   // Build an 'Update options' form.
   $form['options'] = array(
     '#type' => 'fieldset',
@@ -443,5 +447,56 @@ function skinr_ui_delete_confirm_submit($form, &$form_state) {
     skinr_set($skinr);
   }
 
+  $form_state['redirect'] = 'admin/appearance/skinr';
+}
+
+function skinr_ui_multiple_delete_confirm($form, &$form_state, $skins) {
+  $themes = list_themes();
+
+  $form['skins'] = array('#prefix' => '<ul>', '#suffix' => '</ul>', '#tree' => TRUE);
+  // array_filter returns only elements with TRUE values
+  foreach ($skins as $skin => $value) {
+    $parts = explode('__', $skin, 3);
+    $form['skins'][$skin] = array(
+      '#type' => 'hidden',
+      '#value' => $skin,
+      '#prefix' => '<li>',
+      '#suffix' => t('Skinr ID %sid of type %type for theme %theme', array('%sid' => $parts[2], '%type' => $parts[1], '%theme' => $themes[$parts[0]]->info['name'])) ."</li>\n",
+    );
+  }
+  $form['operation'] = array('#type' => 'hidden', '#value' => 'delete');
+  $form['#submit'][] = 'skinr_ui_multiple_delete_confirm_submit';
+  $confirm_question = format_plural(count($skins),
+                                  'Are you sure you want to delete this item?',
+                                  'Are you sure you want to delete these items?');
+  return confirm_form($form,
+                    $confirm_question,
+                    'admin/appearance/skinr', t('This action cannot be undone.'),
+                    t('Delete'), t('Cancel'));
+}
+
+function skinr_ui_multiple_delete_confirm_submit($form, &$form_state) {
+  if ($form_state['values']['confirm']) {
+    foreach ($form_state['values']['skins'] as $skin => $value) {
+      $parts = explode('__', $skin, 3);
+
+      $skinr = new StdClass();
+      $skinr->theme = $parts[0];
+      $skinr->module = $parts[1];
+      $skinr->sid = $parts[2];
+      $skinr->skins = array();
+
+      skinr_set($skinr);
+    }
+    
+    $count = count($form_state['values']['skins']);
+    if ($count == 1) {
+      watchdog('content', 'Deleted 1 skinr setting.');
+    }
+    else {
+      watchdog('content', 'Deleted @count skinr settings.', array('@count' => $count));
+    }
+    drupal_set_message(format_plural($count, 'Deleted 1 skinr setting.', 'Deleted @count skinr settings.'));
+  }
   $form_state['redirect'] = 'admin/appearance/skinr';
 }
