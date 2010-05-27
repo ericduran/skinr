@@ -611,7 +611,7 @@ function _skinr_skins_data() {
 
   if (is_null($cache)) {
     // Find skins.
-    $skins = drupal_system_listing('\.info$', 'skins');
+    $skins = drupal_system_listing('/\.info$/', 'skins');
 
     $defaults = skinr_skins_default();
 
