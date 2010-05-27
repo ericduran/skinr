@@ -78,18 +78,6 @@ function skinr_ui_menu() {
     'file' => 'skinr_ui.rules.inc',
   );
 
-  // Settings.
-  $items['admin/appearance/skinr/settings'] = array(
-    'title' => 'Settings',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('skinr_ui_settings'),
-    'type' => MENU_LOCAL_TASK,
-    'access arguments' => array('administer skinr'),
-    'parent' => 'admin/appearance/skinr',
-    'weight' => 4,
-    'description' => t('Configure Skinr settings.'),
-    'file' => 'skinr_ui.admin.inc',
-  );
   // Import & Export.
   $items['admin/appearance/skinr/import'] = array(
     'title' => 'Import',
@@ -111,6 +99,19 @@ function skinr_ui_menu() {
     'parent' => 'admin/appearance/skinr',
     'weight' => 3,
     'description' => t('Export Skinr settings.'),
+    'file' => 'skinr_ui.admin.inc',
+  );
+
+  // Settings.
+  $items['admin/appearance/skinr/settings'] = array(
+    'title' => 'Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('skinr_ui_settings'),
+    'type' => MENU_LOCAL_TASK,
+    'access arguments' => array('administer skinr'),
+    'parent' => 'admin/appearance/skinr',
+    'weight' => 4,
+    'description' => t('Configure Skinr settings.'),
     'file' => 'skinr_ui.admin.inc',
   );
 
@@ -239,7 +240,9 @@ function skinr_ui_edit($module, $sid) {
  * Skinr form.
  */
 function skinr_ui_form($form, &$form_state, $arguments) {
-  $form = array();
+  $form = array(
+    '#attributes' => array('class' => 'skinr-form'),
+  );
 
   $form['skinr']['module'] = array(
     '#type' => 'hidden',
