@@ -43,7 +43,7 @@ function skinr_ui_menu() {
   );
 
   // Rules.
-  $items['admin/appearance/skinr/rule'] = array(
+  $items['admin/appearance/skinr/rules'] = array(
     'title' => 'Rules',
     'page callback' => 'skinr_rules',
     'type' => MENU_LOCAL_TASK,
@@ -53,7 +53,7 @@ function skinr_ui_menu() {
     'description' => t('Configure region and page level Skinr rules.'),
     'file' => 'skinr_ui.rules.inc',
   );
-  $items['admin/appearance/skinr/rule/add'] = array(
+  $items['admin/appearance/skinr/rules/add'] = array(
     'title' => 'Create a new rule',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('skinr_rule_add'),
@@ -61,7 +61,7 @@ function skinr_ui_menu() {
     'access arguments' => array('administer skinr'),
     'file' => 'skinr_ui.rules.inc',
   );
-  $items['admin/appearance/skinr/rule/edit'] = array(
+  $items['admin/appearance/skinr/rules/edit'] = array(
     'title' => 'Edit Skinr rule',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('skinr_rule_edit'),
@@ -69,7 +69,7 @@ function skinr_ui_menu() {
     'access arguments' => array('administer skinr'),
     'file' => 'skinr_ui.rules.inc',
   );
-  $items['admin/appearance/skinr/rule/delete'] = array(
+  $items['admin/appearance/skinr/rules/delete'] = array(
     'title' => 'Delete Skinr rule',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('skinr_rule_delete_confirm'),

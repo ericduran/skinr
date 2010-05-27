@@ -24,13 +24,13 @@ function skinr_rules() {
     $row = array(
       check_plain($rule->title),
       check_plain($rule->rule_type),
-      l(t('edit'), 'admin/appearance/skinr/rule/edit/'. $rule->rid),
-      l(t('delete'), 'admin/appearance/skinr/rule/delete/'. $rule->rid),
+      l(t('edit'), 'admin/appearance/skinr/rules/edit/'. $rule->rid),
+      l(t('delete'), 'admin/appearance/skinr/rules/delete/'. $rule->rid),
     );
     $rows[] = $row;
   }
 
-  $link = l(t('Create a new rule'), 'admin/appearance/skinr/rule/add');
+  $link = l(t('Create a new rule'), 'admin/appearance/skinr/rules/add');
   $row = array();
   if (empty($rows)) {
     $row[] = array(
@@ -109,7 +109,7 @@ function skinr_rule_add_submit($form, &$form_state) {
   // Set rule id, if we inserted a new rule to allow others to know what rule they're working with.
   $form_state['values']['rid'] = $rule->rid;
 
-  $form_state['redirect'] = 'admin/appearance/skinr/rule/edit/' . $rule->rid;
+  $form_state['redirect'] = 'admin/appearance/skinr/rules/edit/' . $rule->rid;
 }
 
 /**
@@ -229,7 +229,7 @@ function skinr_rule_edit_submit($form, &$form_state) {
   // Set rule id, if we inserted a new rule to allow others to know what rule they're working with.
   $form_state['values']['rid'] = $rule->rid;
 
-  $form_state['redirect'] = 'admin/appearance/skinr/rule';
+  $form_state['redirect'] = 'admin/appearance/skinr/rules';
 }
 
 function skinr_rule_delete_submit($form, &$form_state) {
@@ -238,7 +238,7 @@ function skinr_rule_delete_submit($form, &$form_state) {
     $destination = drupal_get_destination();
     unset($_REQUEST['destination']);
   }
-  $form_state['redirect'] = array('admin/appearance/skinr/rule/delete/'. $form_state['values']['rid'], $destination);
+  $form_state['redirect'] = array('admin/appearance/skinr/rules/delete/'. $form_state['values']['rid'], $destination);
 }
 
 /**
@@ -253,7 +253,7 @@ function skinr_rule_delete_confirm($form, &$form_state, $rid) {
   $rule = skinr_rule_load($rid);
   return confirm_form($form,
     t('Are you sure you want to delete %title?', array('%title' => $rule->title)),
-    isset($_GET['destination']) ? $_GET['destination'] : 'admin/appearance/skinr/rule',
+    isset($_GET['destination']) ? $_GET['destination'] : 'admin/appearance/skinr/rules',
     t('This action cannot be undone.'),
     t('Delete'),
     t('Cancel')
@@ -265,5 +265,5 @@ function skinr_rule_delete_confirm_submit($form, &$form_state) {
     skinr_rule_delete($form_state['values']['rid']);
   }
 
-  $form_state['redirect'] = 'admin/appearance/skinr/rule';
+  $form_state['redirect'] = 'admin/appearance/skinr/rules';
 }
