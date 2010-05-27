@@ -81,7 +81,7 @@ function skinr_ui_list($form, &$form_state) {
   $destination = drupal_get_destination();
 
   foreach ($themes as $theme) {
-    if (!$theme->status) {
+    if (!$theme->status || !empty($theme->info['hidden'])) {
       continue;
     }
     $skinrs = skinr_get($theme->name);
@@ -260,6 +260,10 @@ function skinr_ui_export_form($form, &$form_state, $theme = NULL) {
     $options[$current_theme] = $themes[$current_theme]->info['name']. ' [' . t('default') . ']';
 
     foreach ($themes as $theme) {
+      if (!empty($theme->info['hidden'])) {
+        continue;
+      }
+      
       if ($theme->name == $current_theme) {
         // Do nothing.
       }
@@ -318,6 +322,9 @@ function skinr_ui_import_form($form, &$form_state) {
   $options[$current_theme] = $themes[$current_theme]->info['name']. ' [' . t('default') . ']';
 
   foreach ($themes as $theme) {
+    if (!empty($theme->info['hidden'])) {
+      continue;
+    }
     if ($theme->name == $current_theme) {
       // Do nothing.
     }
