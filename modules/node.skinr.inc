@@ -17,11 +17,11 @@
 function node_skinr_config() {
   $data['node']['form']['node_type_form'] = array(
     'index_handler' => 'node_skinr_form_index_handler',
-    'preprocess_hook' => 'node',
+    'preprocess_hook_callback' => 'node_skinr_preprocess_hook_callback',
     'title' => t('node settings'),
   );
   $data['node']['form']['skinr_ui_form'] = array(
-    'preprocess_hook' => 'node',
+    'preprocess_hook_callback' => 'node_skinr_preprocess_hook_callback',
     'title' => t('node settings'),
     'collapsed' => FALSE,
   );
@@ -74,6 +74,30 @@ function node_skinr_form_index_handler($op, &$form, $form_state) {
 }
 
 /**
+ * Skinr preprocess_hook_callback.
+ *
+ * @param &$form
+ *   Passes in the $form parameter from hook_form_alter().
+ * @param $form_state
+ *   Passes in the $form_state parameter from hook_form_alter().
+ * @return
+ *   The preprocess_hook we wish to use.
+ */
+function node_skinr_preprocess_hook_callback(&$form, $form_state) {
+  $preprocess_hooks = array();
+
+  if (!isset($form['#node_type']->type) && !empty($form['skinr']['sid']['#value'])) {
+    $preprocess_hooks[] = 'node_' . $form['skinr']['sid']['#value'];
+  }
+  else {
+    $preprocess_hooks[] = 'node_' . $form['#node_type']->type;
+  }
+  $preprocess_hooks[] = 'node';
+
+  return $preprocess_hooks;
+}
+
+/**
  * Skinr preprocess index handler.
  *
  * @param &$variables
@@ -104,7 +128,7 @@ function node_skinr_preprocess_index_handler(&$variables) {
 function node_skinr_contextual_links(&$variables) {
   $links = array();
   $links['skinr-node'] = array(
-    'admin/appearance/skinr/edit', array('node', $variables['node']->type),
+    'admin/appearance/skinr/edit/nojs', array('node', $variables['node']->type),
   );
   return $links;
 }

@@ -17,20 +17,20 @@
 function block_skinr_config() {
   $data['block']['form']['block_admin_configure'] = array(
     'index_handler' => 'block_skinr_form_index_handler',
-    'preprocess_hook' => 'block',
+    'preprocess_hook_callback' => 'block_skinr_preprocess_hook_callback',
     'title' => t('block settings'),
     'skinr_weight' => 0,
     'collapsed' => FALSE,
   );
   $data['block']['form']['block_add_block_form'] = array(
     'index_handler' => 'block_skinr_form_index_handler',
-    'preprocess_hook' => 'block',
+    'preprocess_hook_callback' => 'block_skinr_preprocess_hook_callback',
     'title' => t('block settings'),
     'skinr_weight' => 0,
     'collapsed' => FALSE,
   );
   $data['block']['form']['skinr_ui_form'] = array(
-    'preprocess_hook' => 'block',
+    'preprocess_hook_callback' => 'block_skinr_preprocess_hook_callback',
     'title' => t('block settings'),
     'collapsed' => FALSE,
   );
@@ -71,6 +71,38 @@ function block_skinr_form_index_handler($op, &$form, $form_state) {
 }
 
 /**
+ * Skinr preprocess_hook_callback.
+ *
+ * @param &$form
+ *   Passes in the $form parameter from hook_form_alter().
+ * @param $form_state
+ *   Passes in the $form_state parameter from hook_form_alter().
+ * @return
+ *   The preprocess_hook we wish to use.
+ */
+function block_skinr_preprocess_hook_callback(&$form, $form_state) {
+  $preprocess_hooks = array();
+
+  if (!isset($form['module']['#value']) && isset($form['skinr']['sid']['#value'])) {
+    $result = db_select('block', 'b')
+      ->fields('b')
+      ->distinct()
+      ->where('CONCAT(b.module, '-', b.delta) = :identifier', array(':identifier' => $form['skinr']['sid']['#value']))
+      ->range(0, 1)
+      ->execute();
+    foreach ($result as $block) {
+      $preprocess_hooks[] = 'block_'. $block->module;
+    }
+  }
+  else {
+    $preprocess_hooks[] = 'block_'. $form['module']['#value'];
+  }
+  $preprocess_hooks[] = 'block';
+
+  return $preprocess_hooks;
+}
+
+/**
  * Skinr preprocess index handler.
  *
  * @param &$variables
@@ -101,7 +133,7 @@ function block_skinr_preprocess_index_handler(&$variables) {
 function block_skinr_contextual_links(&$variables) {
   $links = array();
   $links['skinr-block'] = array(
-    'admin/appearance/skinr/edit', array('block', $variables['block']->module . '-' . $variables['block']->delta),
+    'admin/appearance/skinr/edit/nojs', array('block', $variables['block']->module . '-' . $variables['block']->delta),
   );
   return $links;
 }

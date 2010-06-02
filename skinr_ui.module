@@ -36,11 +36,42 @@ function skinr_ui_menu() {
   );
   $items['admin/appearance/skinr/list'] = array(
     'title' => 'List',
+    'description' => t('Manage Skinr settings.'),
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'parent' => 'admin/appearance/skinr',
-    'description' => t('Manage Skinr settings.'),
     'weight' => -10,
   );
+
+  // Themes.
+  $items['admin/appearance/skinr/skins'] = array(
+    'title' => 'Skins',
+    'description' => 'Manage which skins are available when changing Skinr settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('skinr_ui_admin_skinsets'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'skinr_ui.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'parent' => 'admin/appearance/skinr',
+  );
+  $items['admin/appearance/skinr/skins/select'] = array(
+    'title' => 'List',
+    'description' => 'Manage your skins.',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'parent' => 'admin/appearance/skinr/skins',
+    'weight' => -1,
+  );
+  foreach (skinr_skinsets('skinset') as $skinset) {
+    $items['admin/appearance/skinr/skins/settings/'. $skinset->name] = array(
+      'title' => $skinset->info['name'],
+      'description' => 'Manage which options are available for each Skin when changing Skinr settings.',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('skinr_ui_admin_skinsets_settings', $skinset->name),
+      'access arguments' => array('administer site configuration'),
+      'file' => 'skinr_ui.admin.inc',
+      'type' => MENU_LOCAL_TASK,
+      'parent' => 'admin/appearance/skinr/skins',
+    );
+  }
 
   // Rules.
   $items['admin/appearance/skinr/rules'] = array(
@@ -62,7 +93,7 @@ function skinr_ui_menu() {
     'file' => 'skinr_ui.rules.inc',
   );
   $items['admin/appearance/skinr/rules/edit'] = array(
-    'title' => 'Edit Skinr rule',
+    'title' => 'Edit rule',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('skinr_rule_edit'),
     'type' => MENU_CALLBACK,
@@ -70,7 +101,7 @@ function skinr_ui_menu() {
     'file' => 'skinr_ui.rules.inc',
   );
   $items['admin/appearance/skinr/rules/delete'] = array(
-    'title' => 'Delete Skinr rule',
+    'title' => 'Delete rule',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('skinr_rule_delete_confirm'),
     'type' => MENU_CALLBACK,
@@ -116,20 +147,20 @@ function skinr_ui_menu() {
   );
 
   // Edit Skinr settings.
-  $items['admin/appearance/skinr/edit/%/%'] = array(
+  $items['admin/appearance/skinr/edit/%dialog_js/%/%'] = array(
     'title' => 'Edit skin',
     'title callback' => 'skinr_ui_edit_title',
-    'title arguments' => array(4, 5),
+    'title arguments' => array(5, 6),
     'page callback' => 'skinr_ui_edit',
-    'page arguments' => array(4, 5), // module, sid
+    'page arguments' => array(4, 5, 6), // js|nojs, module, sid
     'type' => MENU_CALLBACK,
     'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
     'access arguments' => array('administer skinr'),
   );
-  $items['admin/appearance/skinr/edit/%/%/configure'] = array(
+  $items['admin/appearance/skinr/edit/%dialog_js/%/%/configure'] = array(
     'title' => 'Edit skin',
     'title callback' => 'skinr_ui_edit_contextual_title',
-    'title arguments' => array(4, 5),
+    'title arguments' => array(5, 6),
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'context' => MENU_CONTEXT_INLINE,
   );
@@ -156,6 +187,15 @@ function skinr_ui_menu() {
   return $items;
 }
 
+if (!function_exists('dialog_js_load')) {
+  function dialog_js_load($js = 'nojs') {
+    if ($js == 'ajax') {
+      return TRUE;
+    }
+    return 0;
+  }
+}
+
 /**
  * Implementation of hook_theme().
  */
@@ -163,6 +203,26 @@ function skinr_ui_theme() {
   return array(
     'skinr_ui_filters' => array(
       'render element' => 'form',
+      'file' => 'skinr_ui.admin.inc',
+    ),
+    'skinr_ui_admin_skinsets_fieldset' => array(
+      'render element' => 'form',
+      'file' => 'skinr_ui.admin.inc',
+    ),
+    'skinr_ui_admin_skinsets_info' => array(
+      'variables' => array('name' => NULL, 'description' => NULL),
+      'file' => 'skinr_ui.admin.inc',
+    ),
+    'skinr_ui_admin_skinsets_incompatible' => array(
+      'variables' => array('message' => NULL),
+      'file' => 'skinr_ui.admin.inc',
+    ),
+    'skinr_ui_admin_skinsets_settings_fieldset' => array(
+      'render element' => 'form',
+      'file' => 'skinr_ui.admin.inc',
+    ),
+    'skinr_ui_admin_skinsets_settings_info' => array(
+      'variables' => array('name' => NULL, 'description' => NULL, 'features' => NULL),
       'file' => 'skinr_ui.admin.inc',
     ),
   );
@@ -191,6 +251,24 @@ function skinr_ui_help($path, $arg) {
       return  '<p>' . t('To export Skinr settings, ensure the correct theme is selected and click the "Export" button.') . '</p>';
       break;
   }
+}
+
+/**
+ * Check if overlay functionality is enabled.
+ */
+function skinr_ui_overlay_enabled() {
+  static $warned = FALSE;
+
+  if (!module_exists('dialog') && !$warned) {
+    // Ensure that dialog module is enabled, else functionality will be crippled.
+    $message = 'The dialog module is now required by skinr to function properly. Please enable this module.';
+    drupal_set_message(t($message), 'error', FALSE);
+    watchdog('skinr', $message, array(), WATCHDOG_CRITICAL);
+
+    $warned = TRUE;
+  }
+
+  return module_exists('dialog');
 }
 
 /**
@@ -233,16 +311,29 @@ function skinr_ui_edit_contextual_title($module, $sid) {
 /**
  * Menu callback; prepares some variables and displays a Skinr edit form.
  *
+ * @param $js
+ *   ...
  * @param $module
  *   The module that we're editing settings of.
  * @param $sid
  *   The sid of the object we're editing settings of.
+ * @param $sids
+ *   ...
+ *
+ * @todo Enter description of parameters.
  */
-function skinr_ui_edit($module, $sid) {
+function skinr_ui_edit($js = FALSE, $module, $sid, $sids = NULL) {
+  global $gskinr;
+
+  if ($js) {
+    // Do additional ajax related stuff.
+  }
+  
   $arguments = array(
     'skinr' => array(
       'module' => $module,
       'sid' => $sid,
+      'sids' => $sids,
     ),
   );
   return drupal_get_form('skinr_ui_form', $arguments);
@@ -264,6 +355,12 @@ function skinr_ui_form($form, &$form_state, $arguments) {
     '#type' => 'hidden',
     '#value' => !empty($form_state['skinr']['sid']) ? $form_state['skinr']['sid'] : $arguments['skinr']['sid'],
   );
+  if (!empty($form_state['skinr']['sids']) || !empty($arguments['skinr']['sids'])) {
+    $form['skinr']['sids'] = array(
+      '#type' => 'hidden',
+      '#value' => !empty($form_state['skinr']['sids']) ? $form_state['skinr']['sids'] : $arguments['skinr']['sids'],
+    );
+  }
 
   $form['submit'] = array(
     '#type' => 'submit',
@@ -278,6 +375,11 @@ function skinr_ui_form($form, &$form_state, $arguments) {
  * Implementation of hook_form_alter().
  */
 function skinr_ui_form_alter(&$form, $form_state, $form_id) {
+  // Fix for update script.
+  if ($form_id == 'update_script_selection_form') {
+    return;
+  }
+  
   $skinr_config = skinr_fetch_config();
   $info = skinr_skin_data();
 
@@ -366,8 +468,13 @@ function skinr_ui_form_alter(&$form, $form_state, $form_id) {
 
         // Create individual widgets for each skin.
         $template_options = array();
-        if (isset($info[$theme->name]['skins'])) {
-          foreach ($info[$theme->name]['skins'] as $skin_id => $skin) {
+        if (isset($info[$theme->name]->skins)) {
+          foreach ($info[$theme->name]->skins as $skin_id => $skin) {
+            // Check if this skin is disabled.
+            if (empty($skin['status'][$theme->name])) {
+              continue;
+            }
+
             // Check if this skin applies to this hook.
             if (!is_array($skin['features']) || (!in_array('*', $skin['features']) && !_skinr_is_featured($preprocess_hooks, $skin['features']))) {
               continue;
@@ -376,7 +483,7 @@ function skinr_ui_form_alter(&$form, $form_state, $form_id) {
             // Create widget.
             switch ($skin['type']) {
               case 'checkboxes':
-                $form['skinr_settings'][$module . '_group'][$theme->name]['widgets'][$skin_id] = array(
+                $field = array(
                   '#type' => 'checkboxes',
                   '#multiple' => TRUE,
                   '#title' => t($skin['title']),
@@ -386,7 +493,7 @@ function skinr_ui_form_alter(&$form, $form_state, $form_id) {
                 );
                 break;
               case 'radios':
-                $form['skinr_settings'][$module . '_group'][$theme->name]['widgets'][$skin_id] = array(
+                $field = array(
                   '#type' => 'radios',
                   '#title' => t($skin['title']),
                   '#options' => array_merge(array('' => '&lt;none&gt;'), skinr_ui_info_options_to_form_options($skin['options'])),
@@ -395,7 +502,7 @@ function skinr_ui_form_alter(&$form, $form_state, $form_id) {
                 );
                 break;
               case 'select':
-                $form['skinr_settings'][$module . '_group'][$theme->name]['widgets'][$skin_id] = array(
+                $field = array(
                   '#type' => 'select',
                   '#title' => t($skin['title']),
                   '#options' => array_merge(array('' => '<none>'), skinr_ui_info_options_to_form_options($skin['options'])),
@@ -403,6 +510,22 @@ function skinr_ui_form_alter(&$form, $form_state, $form_id) {
                   '#description' => t($skin['description']),
                 );
                 break;
+            }
+            if (empty($skin['group'])) {
+              $form['skinr_settings'][$module . '_group'][$theme->name]['widgets'][$skin_id] = $field;
+            }
+            else {
+              if (!isset($form['skinr_settings'][$module . '_group'][$theme->name]['widgets'][$skin['group']])) {
+                $group = $info[$theme->name]->options['groups'][$skin['group']];
+                $form['skinr_settings'][$module . '_group'][$theme->name]['widgets'][$skin['group']] = array(
+                  '#type' => 'fieldset',
+                  '#title' => t($group['title']),
+                  '#description' => t($group['description']),
+                  '#collapsible' => $group['collapsible'],
+                  '#collapsed' => $group['collapsed'],
+                );
+              }
+              $form['skinr_settings'][$module . '_group'][$theme->name]['widgets'][$skin['group']][$skin_id] = $field;
             }
 
             // Prepare templates.
@@ -413,24 +536,19 @@ function skinr_ui_form_alter(&$form, $form_state, $form_id) {
 
         // Check for access.
         if (skinr_handler('access_handler', 'access skinr classes', $form_settings['access_handler'], $form, $form_state)) {
-          $form['skinr_settings'][$module . '_group'][$theme->name]['advanced'] = array(
-            '#type' => 'fieldset',
-            '#title' => t('Advanced options'),
-            '#collapsible' => TRUE,
-            '#collapsed' => empty($additional_default),
-          );
-          $form['skinr_settings'][$module . '_group'][$theme->name]['advanced']['_additional'] = array(
+          $form['skinr_settings'][$module . '_group'][$theme->name]['_additional'] = array(
             '#type' => 'textfield',
-            '#title' => t('Apply additional CSS classes'),
-            '#description' => t('Optionally add additional CSS classes. Example: <em>my-first-class my-second-class</em>'),
+            '#title' => t('CSS classes'),
+            '#size' => 40,
+            '#description' => t('To add CSS classes manually, enter classes separated by a single space i.e. <code>first-class second-class</code>'),
             '#default_value' => $additional_default,
           );
-          $form['skinr_settings'][$module . '_group'][$theme->name]['advanced']['_template'] = array(
-            '#type' => 'select',
+          $form['skinr_settings'][$module . '_group'][$theme->name]['_template'] = array(
+            '#type' => !empty($template_options) ? 'select' : 'hidden',
             '#title' => t('Template file'),
             '#options' => array_merge(array('' => 'Default'), $template_options),
             '#default_value' => $template_default,
-            '#description' => t('Optionally, select a template file to associate with the hooks <strong>!hooks</strong>. Selecting "Default" will let Drupal handle this.', array('!hooks' => implode(', ', $preprocess_hooks))),
+            '#description' => t('Optionally, select a template file to use. The "Default" option allows Drupal to handle this.'),
           );
 
           // Only add validation handler once.
@@ -449,9 +567,13 @@ function skinr_ui_form_alter(&$form, $form_state, $form_id) {
       $form['submit']['#weight'] = 40;
 
       // Only add submit handler once.
-      eval('$element =& $form' . $form_settings['submit_handler_attach_to'] . ';');
-      if (!empty($element) && !in_array('skinr_ui_form_submit', $element)) {
-        $string = $element[] = 'skinr_ui_form_submit';
+      // Find the property to check.
+      $attr = &$form;
+      foreach($form_settings['submit_handler_attach_to'] as $part) {
+        $attr = &$attr[$part];
+      }
+      if (!empty($attr) && !in_array('skinr_ui_form_submit', $attr)) {
+        $string = $attr[] = 'skinr_ui_form_submit';
       }
 
       // Keep looping, there might be other modules that implement the same form_id.
@@ -466,18 +588,42 @@ function skinr_ui_form_validate($form, &$form_state) {
   $form_id = $form_state['values']['form_id'];
   $skinr_config = skinr_fetch_config();
 
+  $error = FALSE;
   foreach ($skinr_config as $module => $settings) {
     if (isset($settings['form'][$form_id]) && isset($form_state['values']['skinr_settings'][$module . '_group'])) {
       foreach ($form_state['values']['skinr_settings'][$module . '_group'] as $theme_name => $theme) {
-        if (isset($theme['advanced']['_additional'])) {
+        if (isset($theme['_additional'])) {
           $form_settings = array_merge(_skinr_fetch_config_defaults('form'), $settings['form'][$form_id]);
 
           // Validate additional classes field.
-          if (preg_match('/[^a-zA-Z0-9\-\_\s]/', $theme['advanced']['_additional'])) {
-            form_set_error('skinr_settings][' . $module . '_group][' . $theme_name . '][advanced][_additional', t('Additional classes for Skinr may only contain alphanumeric characters, spaces, - and _.'));
+          if (preg_match('/[^a-zA-Z0-9\-\_\s]/', $theme['_additional'])) {
+            form_set_error('skinr_settings][' . $module . '_group][' . $theme_name . '][_additional', t('Additional classes for Skinr may only contain alphanumeric characters, spaces, - and _.'));
+            $error = TRUE;
           }
 
           // Keep looping, there might be other modules that implement the same form_id.
+        }
+      }
+    }
+  }
+
+  // Undo any grouping to ease processing on submit.
+  if (!$error) {
+    $info = skinr_skin_data();
+    foreach ($skinr_config as $module => $settings) {
+      if (isset($settings['form'][$form_id]) && isset($form_state['values']['skinr_settings'][$module . '_group'])) {
+        foreach ($form_state['values']['skinr_settings'][$module . '_group'] as $theme_name => $theme) {
+          if (empty($info[$theme_name]->options['groups'])) {
+            continue;
+          }
+
+          foreach ($info[$theme_name]->options['groups'] as $group_name => $group) {
+            if (!empty($theme['widgets'][$group_name]) && is_array($theme['widgets'][$group_name])) {
+              $group_values = $theme['widgets'][$group_name];
+              unset($form_state['values']['skinr_settings'][$module . '_group'][$theme_name]['widgets'][$group_name]);
+              $form_state['values']['skinr_settings'][$module . '_group'][$theme_name]['widgets'] = array_merge($form_state['values']['skinr_settings'][$module . '_group'][$theme_name]['widgets'], $group_values);
+            }
+          }
         }
       }
     }
@@ -581,6 +727,14 @@ function _skinr_is_featured($preprocess_hooks, $features) {
     }
   }
   return FALSE;
+}
+
+/**
+ * Helper function to retrieve a unique id for each skinr class. Used by AJAX.
+ */
+function _skinr_ui_ajax_id() {
+  static $skinr_id = 0;
+  return ++$skinr_id;
 }
 
 /**

@@ -57,7 +57,7 @@ function skinr_skinr_config() {
  *   - For "form", passes in the $form_state parameter from hook_form_alter().
  *   - For "submit", passes in the $form_state parameter from hook_form_submit().
  * @return
- *   The index where we can find our values in Skinrs data structure.
+ *   The index where we can find our values in Skinr's data structure.
  */
 function rules_skinr_form_index_handler($op, &$form, $form_state) {
   switch ($op) {
@@ -156,7 +156,7 @@ function rules_skinr_contextual_links(&$variables) {
   foreach ($rules as $rule) {
     if (skinr_rule_visible($rule->rid)) {
       $links['skinr-rule-' . $counter++] = array(
-        'admin/config/skinr/edit', array('page', $rule->rid),
+        'admin/config/skinr/edit/nojs', array('page', $rule->rid),
       );
     }
   }

@@ -1,5 +1,6 @@
 <?php
 // $Id$
+
 /**
  * @file
  * Provide skinr handling for node.module
@@ -20,8 +21,8 @@ function views_skinr_config() {
     'access_handler' => 'views_skinr_access_handler_display',
     'data_handler' => 'views_skinr_data_handler',
     'submit_handler' => 'views_skinr_submit_handler_display',
-    'submit_handler_attach_to' => "['buttons']['submit']['#submit']",
-    'preprocess_hook' => 'views_view',
+    'submit_handler_attach_to' => array('buttons', 'submit', '#submit'),
+    'preprocess_hook_callback' => 'views_skinr_preprocess_hook_callback',
     'title' => t('views style settings'),
     'skinr_weight' => 0,
     'collapsed' => FALSE,
@@ -32,7 +33,7 @@ function views_skinr_config() {
   );
   $data['views']['form']['skinr_ui_form'] = array(
     'index_handler' => 'skinr_ajax_index_handler',
-    'preprocess_hook' => 'views_view',
+    'preprocess_hook_callback' => 'views_skinr_preprocess_hook_callback',
     'title' => t('views style settings'),
     'collapsed' => FALSE,
   );
@@ -195,7 +196,7 @@ function views_skinr_data_handler(&$form, $form_state, $theme, $module, $form_se
  */
 function views_skinr_submit_handler_display(&$form, $form_state, $module, $form_settings) {
   foreach ($form_state['values']['skinr_settings'][$module .'_group'] as $theme_name => $theme) {
-    if ((isset($theme['widgets']) && count($theme['widgets'])) || isset($theme['advanced']['_additional'])) {
+    if ((isset($theme['widgets']) && count($theme['widgets'])) || isset($theme['_additional'])) {
       $sid   = skinr_handler('form_index_handler', 'submit', $form_settings['index_handler'], $form, $form_state);
       $value = array();
 
@@ -205,17 +206,17 @@ function views_skinr_submit_handler_display(&$form, $form_state, $module, $form_
         }
       }
 
-      if (isset($theme['advanced']['_additional'])) {
-        $theme['advanced']['_additional'] = trim($theme['advanced']['_additional']);
-        if (!empty($theme['advanced']['_additional'])) {
-          $value['_additional'] = $theme['advanced']['_additional'];
+      if (isset($theme['_additional'])) {
+        $theme['_additional'] = trim($theme['_additional']);
+        if (!empty($theme['_additional'])) {
+          $value['_additional'] = $theme['_additional'];
         }
       }
 
-      if (isset($theme['advanced']['_template'])) {
-        $theme['advanced']['_template'] = trim($theme['advanced']['_template']);
-        if (!empty($theme['advanced']['_template'])) {
-          $value['_template'] = $theme['advanced']['_template'];
+      if (isset($theme['_template'])) {
+        $theme['_template'] = trim($theme['_template']);
+        if (!empty($theme['_template'])) {
+          $value['_template'] = $theme['_template'];
         }
       }
 
@@ -272,6 +273,57 @@ function views_skinr_submit_handler_view(&$form, $form_state, $module, $form_set
       views_object_cache_clear('skinr', $form_state['view']->name);
       break;
   }
+}
+
+/**
+ * Skinr form preprocess_hook callback.
+ *
+ * @param &$form
+ *   Passes in the $form parameter from hook_form_alter().
+ * @param $form_state
+ *   Passes in the $form_state parameter from hook_form_alter().
+ * @return
+ *   The preprocess_hook we wish to use.
+ */
+function views_skinr_preprocess_hook_callback(&$form, $form_state) {
+  $preprocess_hooks = array('views_view');
+
+  if (!empty($form_state['view']) && !empty($form_state['view']->name)) {
+    $view = $form_state['view'];
+  }
+  elseif(isset($form['skinr']['sid']['#value'])) {
+    $sidinfo = _views_skinr_sidinfo($form['skinr']['sid']['#value']);
+    if ($view = views_get_view($sidinfo['view'])) {
+      $view->execute_display($sidinfo['display']);
+    }
+  }
+
+  if (!empty($view)) {
+    $display = $view->display[$view->current_display];
+
+    // Create list of suggested templates.
+    $preprocess_hooks = views_theme_functions('views_view', $view, $display);
+    // Fetch additional style based suggested templates.
+    $additional_hooks = views_theme_functions($view->style_plugin->definition['theme'], $view, $display);
+
+    $preprocess_hooks = array_merge($additional_hooks, $preprocess_hooks);
+  }
+
+  return $preprocess_hooks;
+}
+
+function _views_skinr_sidinfo($sid) {
+  // view-[view_name]-display-[display_name]
+  $pos = strpos($sid, '-display-');
+  if ($pos !== FALSE) {
+    $sidinfo = array();
+    $sidinfo['view'] = substr($sid, strlen('view-'), $pos - strlen('view-'));
+    $sidinfo['display'] = substr($sid, $pos + strlen('-display-'));
+
+    return $sidinfo;
+  }
+
+  return FALSE;
 }
 
 /**

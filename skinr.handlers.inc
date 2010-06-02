@@ -105,7 +105,7 @@ function skinr_data_handler(&$form, $form_state, $theme, $module, $form_settings
 function skinr_submit_handler(&$form, $form_state, $module, $form_settings) {
   if (isset($form_state['values']['skinr_settings'][$module . '_group'])) {
     foreach ($form_state['values']['skinr_settings'][$module . '_group'] as $theme_name => $theme) {
-      if ((isset($theme['widgets']) && count($theme['widgets'])) || isset($theme['advanced']['_additional'])) {
+      if ((isset($theme['widgets']) && count($theme['widgets'])) || isset($theme['_additional'])) {
         $skinr = new stdClass();
         $skinr->theme = $theme_name;
         $skinr->module = $module;
@@ -118,17 +118,17 @@ function skinr_submit_handler(&$form, $form_state, $module, $form_settings) {
           }
         }
 
-        if (isset($theme['advanced']['_additional'])) {
-          $theme['advanced']['_additional'] = trim($theme['advanced']['_additional']);
-          if (!empty($theme['advanced']['_additional'])) {
-            $skinr->skins['_additional'] = $theme['advanced']['_additional'];
+        if (isset($theme['_additional'])) {
+          $theme['_additional'] = trim($theme['_additional']);
+          if (!empty($theme['_additional'])) {
+            $skinr->skins['_additional'] = $theme['_additional'];
           }
         }
 
-        if (isset($theme['advanced']['_template'])) {
-          $theme['advanced']['_template'] = trim($theme['advanced']['_template']);
-          if (!empty($theme['advanced']['_template'])) {
-            $skinr->skins['_template'] = $theme['advanced']['_template'];
+        if (isset($theme['_template'])) {
+          $theme['_template'] = trim($theme['_template']);
+          if (!empty($theme['_template'])) {
+            $skinr->skins['_template'] = $theme['_template'];
           }
         }
 

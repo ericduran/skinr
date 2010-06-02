@@ -17,12 +17,12 @@
 function comment_skinr_config() {
   $data['comment']['form']['node_type_form'] = array(
     'index_handler' => 'comment_skinr_form_index_handler',
-    'preprocess_hook' => 'comment_wrapper',
+    'preprocess_hook_callback' => 'comment_skinr_preprocess_hook_callback',
     'title' => t('comment settings'),
     'weight' => 1,
   );
   $data['comment']['form']['skinr_ui_form'] = array(
-    'preprocess_hook' => 'comment_wrapper',
+    'preprocess_hook_callback' => 'comment_skinr_preprocess_hook_callback',
     'title' => t('comment settings'),
     'skinr_weight' => 2,
     'collapsed' => FALSE,
@@ -76,6 +76,30 @@ function comment_skinr_form_index_handler($op, &$form, &$form_state) {
 }
 
 /**
+ * Skinr preprocess_hook_callback.
+ *
+ * @param &$form
+ *   Passes in the $form parameter from hook_form_alter().
+ * @param $form_state
+ *   Passes in the $form_state parameter from hook_form_alter().
+ * @return
+ *   The preprocess_hook we wish to use.
+ */
+function comment_skinr_preprocess_hook_callback(&$form, $form_state) {
+  $preprocess_hooks = array();
+
+  if (!isset($form['#node_type']->type) && !empty($form['skinr']['sid']['#value'])) {
+    $preprocess_hooks[] = 'comment_wrapper_' . $form['skinr']['sid']['#value'];
+  }
+  else {
+    $preprocess_hooks[] = 'comment_wrapper_' . $form['#node_type']->type;
+  }
+  $preprocess_hooks[] = 'comment_wrapper';
+
+  return $preprocess_hooks;
+}
+
+/**
  * Skinr preprocess index handler.
  *
  * @param &$variables
@@ -106,7 +130,7 @@ function comment_skinr_preprocess_index_handler(&$variables) {
 function comment_skinr_contextual_links(&$variables) {
   $links = array();
   $links['skinr-comment'] = array(
-    'admin/appearance/skinr/edit', array('comment', $variables['node']->type),
+    'admin/appearance/skinr/edit/nojs', array('comment', $variables['node']->type),
   );
   return $links;
 }
