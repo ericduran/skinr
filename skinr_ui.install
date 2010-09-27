@@ -20,7 +20,7 @@ function skinr_ui_install() {
 /**
  * Implementation of hook_uninstall().
  */
-function skinr_uninstall() {
+function skinr_ui_uninstall() {
   variable_del('skinr_overlay_width');
   variable_del('skinr_overlay_height');
 }
