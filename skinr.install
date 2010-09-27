@@ -262,7 +262,7 @@ function skinr_update_7002() {
 function skinr_update_7003() {
   if (!db_table_exists('skinr_skinsets') || !db_table_exists('skinr_skins')) {
     $schema = drupal_get_schema_unprocessed('skinr');
-    _drupal_schema_initialize('skinr', $schema);
+    _drupal_schema_initialize($schema, 'skinr');
     
     if (!db_table_exists('skinr_skinsets')) {
       db_create_table('skinr_skinsets', $schema['skinr_skinsets']);
