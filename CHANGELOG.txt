@@ -1,0 +1,5 @@
+// $Id$
+
+Skinr 7.x-2.x, 2010-10-14
+--------------------------------
+by Sun: #908946 - Partial clean up of Drupal 7 port.

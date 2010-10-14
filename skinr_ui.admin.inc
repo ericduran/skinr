@@ -60,7 +60,8 @@ function skinr_ui_filters() {
  * Return form for skinr administration filters.
  */
 function skinr_ui_filter_form() {
-  $session = isset($_SESSION['skinr_ui_overview_filter']) ? $_SESSION['skinr_ui_overview_filter'] : array();
+  $session = &$_SESSION['skinr_ui_overview_filter'];
+  $session = is_array($session) ? $session : array();
   $filters = skinr_ui_filters();
 
   $i = 0;
@@ -89,8 +90,8 @@ function skinr_ui_filter_form() {
     $names[$key] = $filter['title'];
     $form['filters']['status'][$key] = array(
       '#type' => 'select',
-      '#options' => $filter['options'],
       '#title' => $filter['title'],
+      '#options' => $filter['options'],
       '#default_value' => '[any]',
     );
   }

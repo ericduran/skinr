@@ -62,10 +62,7 @@ function skinr_preprocess(&$variables, $hook) {
         if (!empty($extracted['template'])) {
           $variables['theme_hook_suggestions'][] = $extracted['template'];
         }
-        $variables['skinr'] = implode(' ', $extracted['classes']);
-
-        $variables['skinr'] = $extracted['classes'];
-        $variables['classes_array'] = array_merge($variables['classes_array'], $variables['skinr']);
+        $variables['classes_array'] = array_merge($variables['classes_array'], $extracted['classes']);
 
         // Need to add a hook for skinr_ui to plug into.
         $data = array(
@@ -74,10 +71,6 @@ function skinr_preprocess(&$variables, $hook) {
           'skin' => &$extracted,
         );
         drupal_alter('skinr_preprocess', $data);
-
-        // Reset styles to make sure all are included.
-        $variables['styles'] = drupal_get_css();
-        $variables['scripts'] = drupal_get_js();
       }
     }
   }
@@ -254,13 +247,11 @@ function skinr_skin_get_files($skins, $type, $theme = NULL) {
  * The function checks an array of paths for the existence of the file to account for base themes.
  */
 function _skinr_add_file($filename, $type, $media = NULL) {
-  if (file_exists($filename)) {
-    if ($type == 'css') {
-      drupal_add_css($filename, array('weight' => CSS_THEME, 'media' => $media));
-    }
-    else {
-      drupal_add_js($filename, array('weight' => JS_THEME));
-    }
+  if ($type == 'css') {
+    drupal_add_css($filename, array('weight' => CSS_THEME, 'media' => $media));
+  }
+  else {
+    drupal_add_js($filename, array('weight' => JS_THEME));
   }
 }
 
@@ -301,13 +292,15 @@ function skinr_rule_save($rule) {
  */
 function skinr_rule_load($rid = NULL) {
   $rids = (isset($rid) ? array($rid) : array());
-  $rule = skinr_rule_load_multiple($rids);
-  return !empty($rule) ? $rule[0] : FALSE;
+  $rules = skinr_rule_load_multiple($rids);
+  return $rules ? reset($rules) : FALSE;
 }
 
+/**
+ * Loads multiple skinr page rule objects.
+ */
 function skinr_rule_load_multiple($rids = array(), $conditions = array()) {
   $rules = array();
-  
   $select = db_select('skinr_rules')->fields('skinr_rules');
   if (!empty($rids)) {
     $select->condition('rid', $rids);
@@ -315,13 +308,10 @@ function skinr_rule_load_multiple($rids = array(), $conditions = array()) {
   foreach ($conditions as $field => $condition) {
     $select->condition($field, $condition);
   }
-
-  $result = $select->execute();
-  foreach ($result as $rule) {
+  foreach ($select->execute() as $rule) {
     $rule->roles = unserialize($rule->roles);
-    $rules[] = $rule;
+    $rules[$rule->rid] = $rule;
   }
-
   return $rules;
 }
 
@@ -385,7 +375,7 @@ function skinr_rule_visible($rid) {
 function skinr_module_include($file) {
   foreach (skinr_get_module_apis() as $module => $info) {
     $filepath = DRUPAL_ROOT . "/$info[path]/$module.$file";
-    if (is_file($filepath)) {
+    if (file_exists($filepath)) {
       require_once $filepath;
     }
   }
@@ -587,7 +577,7 @@ function skinr_current_theme($exclude_admin_theme = FALSE) {
     $current_theme = $custom_theme;
   }
   else {
-    $current_theme = variable_get('theme_default', 'garland');
+    $current_theme = variable_get('theme_default', 'bartik');
   }
   return $current_theme;
 }
@@ -695,7 +685,6 @@ function _skinr_rebuild_skinset_data() {
 
     // Invoke hook_skinr_info_alter() to give installed modules a chance to
     // modify the data in the .info files if necessary.
-    // @todo: D7 Fix required!
     $type = 'skinset';
     drupal_alter('skinr_info', $skinsets[$key]->info, $skinsets[$key], $type);
     
@@ -827,12 +816,12 @@ function _skinr_add_path_to_files($files, $path, $type) {
  *    An array of skinsets.
  */
 function skinr_skinsets($type) {
-  $cache = &drupal_static(__FUNCTION__, array('theme' => array(), 'skinset' => array()));
+  $skinsets = &drupal_static(__FUNCTION__, array('theme' => array(), 'skinset' => array()));
   // @todo drupal_static_reset('skinr_skinsets');
 
-  $themes = list_themes();
+  if (empty($skinsets[$type])) {
+    $themes = list_themes();
 
-  if (empty($list[$type])) {
     if ($type == 'theme') {
       foreach ($themes as $theme) {
         $skinset = new StdClass();
@@ -841,7 +830,7 @@ function skinr_skinsets($type) {
         $skinset->status = $theme->status ? 1 : 0;
         $skinset->info = $theme->info;
 
-        $cache[$type][$skinset->name] = $skinset;
+        $skinsets[$type][$skinset->name] = $skinset;
       }
     }
     elseif ($type == 'skinset') {
@@ -850,7 +839,7 @@ function skinr_skinsets($type) {
         if (file_exists($skinset->filename)) {
           $skinset->info = unserialize($skinset->info);
 
-          $cache[$type][$skinset->name] = $skinset;
+          $skinsets[$type][$skinset->name] = $skinset;
         }
       }
     }
@@ -860,7 +849,7 @@ function skinr_skinsets($type) {
       $default_status[$theme->name] = $theme->name;
     }
 
-    foreach ($cache[$type] as $key => $skinset) {
+    foreach ($skinsets[$type] as $key => $skinset) {
       $skinset->type = $type;
 
       $additional = _skinr_skinset($skinset);
@@ -874,7 +863,7 @@ function skinr_skinsets($type) {
     }
   }
 
-  return $cache[$type];
+  return $skinsets[$type];
 }
 
 /**
@@ -887,20 +876,18 @@ function skinr_skinsets($type) {
  *   Array of statuses for individual skins in a skinset.
  */
 function skinr_skinset_statuses($skinset_name) {
-  $cache = &drupal_static(__FUNCTION__, array());
+  $statuses = &drupal_static(__FUNCTION__, array());
 
-  if (empty($cache[$skinset_name])) {
-    $cache[$skinset_name] = array();
+  if (empty($statuses[$skinset_name])) {
+    $statuses[$skinset_name] = array();
 
-    $result = db_query("SELECT * FROM {skinr_skins} WHERE name = :name", array(
-      ':name' => $skinset_name,
-    ));
+    $result = db_query("SELECT * FROM {skinr_skins} WHERE name = :name", array(':name' => $skinset_name));
     foreach ($result as $skinr_skin) {
-      $cache[$skinset_name][$skinr_skin->skin] = unserialize($skinr_skin->status);
+      $statuses[$skinset_name][$skinr_skin->skin] = unserialize($skinr_skin->status);
     }
   }
 
-  return $cache[$skinset_name];
+  return $statuses[$skinset_name];
 }
 
 /**
@@ -914,6 +901,14 @@ function skinr_rebuild_skinset_data() {
   skinr_get_files_database($skinsets);
   skinr_update_files_database($skinsets);
   return $skinsets;
+}
+
+/**
+ * Implementation of hook_flush_caches().
+ */
+function skinr_flush_caches() {
+  skinr_rebuild_skinset_data();
+  return array();
 }
 
 /**
@@ -1018,14 +1013,6 @@ function skinr_update_files_database(&$files) {
 }
 
 /**
- * Implementation of hook_flush_caches().
- */
-function skinr_flush_caches() {
-  skinr_rebuild_skinset_data();
-  return array();
-}
-
-/**
  * Themes are allowed to set Skinr skins in their .info files.
  *
  * @return
@@ -1034,7 +1021,7 @@ function skinr_flush_caches() {
  * @todo Use DB caching. No need to keep processing things every page load.
  */
 function skinr_skin_data() {
-  $cache = &drupal_static(__FUNCTION__, NULL);
+  $cache = &drupal_static(__FUNCTION__);
 
   if (is_null($cache)) {
     $skins_skinsets  = skinr_skinsets('skinset');
@@ -1082,7 +1069,7 @@ function skinr_skin_data() {
  * Fetch Skinr configuration data from modules.
  */
 function skinr_fetch_config() {
-  $cache = &drupal_static(__FUNCTION__, NULL);
+  $cache = &drupal_static(__FUNCTION__);
 
   if (is_null($cache)) {
     $cache = module_invoke_all('skinr_config');
@@ -1127,11 +1114,14 @@ function skinr_handler($type, $op, $handler, &$a3, $a4 = NULL, $a5 = NULL, $a6 =
       case 'contextual_links':
       case 'preprocess_index_handler':
         return $handler($a3);
+
       case 'preprocess_hook_callback':
         return $handler($a3, $a4);
+
       case 'data_handler':
       case 'submit_handler':
         return $handler($a3, $a4, $a5, $a6, $a7);
+
       default:
         return $handler($op, $a3, $a4);
     }
