@@ -490,6 +490,7 @@ function skinr_ui_form_alter(&$form, $form_state, $form_id) {
                   '#options' => skinr_ui_info_options_to_form_options($skin['options']),
                   '#default_value' => isset($defaults[$skin_id]) ? $defaults[$skin_id] : array(),
                   '#description' => t($skin['description']),
+                  '#weight' => isset($skin['weight']) ? $skin['weight'] : NULL,
                 );
                 break;
               case 'radios':
@@ -499,6 +500,7 @@ function skinr_ui_form_alter(&$form, $form_state, $form_id) {
                   '#options' => array_merge(array('' => '&lt;none&gt;'), skinr_ui_info_options_to_form_options($skin['options'])),
                   '#default_value' => isset($defaults[$skin_id]) ? $defaults[$skin_id] : '',
                   '#description' => t($skin['description']),
+                  '#weight' => isset($skin['weight']) ? $skin['weight'] : NULL,
                 );
                 break;
               case 'select':
@@ -508,6 +510,7 @@ function skinr_ui_form_alter(&$form, $form_state, $form_id) {
                   '#options' => array_merge(array('' => '<none>'), skinr_ui_info_options_to_form_options($skin['options'])),
                   '#default_value' => isset($defaults[$skin_id]) ? $defaults[$skin_id] : '',
                   '#description' => t($skin['description']),
+                  '#weight' => isset($skin['weight']) ? $skin['weight'] : NULL,
                 );
                 break;
             }
@@ -523,6 +526,7 @@ function skinr_ui_form_alter(&$form, $form_state, $form_id) {
                   '#description' => t($group['description']),
                   '#collapsible' => $group['collapsible'],
                   '#collapsed' => $group['collapsed'],
+                  '#weight' => isset($group['weight']) ? $group['weight'] : NULL,
                 );
               }
               $form['skinr_settings'][$module . '_group'][$theme->name]['widgets'][$skin['group']][$skin_id] = $field;
