@@ -1,9 +1,11 @@
 // $Id$
 
-Skinr 7.x-2.x, 2010-10-14
---------------------------------
-by Sun:     #908946 - Partial clean up of Drupal 7 port.
-by Jacine:  #917540 - Added Support the FAPI #weight attribute.
-by Jacine:  #942292 - Adding Advanced Help needs to 7.x branch.
-by moonray: #943008 - Fix for block_skinr_preprocess_hook_callback() never returning alternate block hooks.
-by sun:     #908946 - Fixed skinr.install schema, update functions and added the first Skinr SimpleTest!  Yay :D
+Skinr 7.x-2.x, xxxx-xx-xx
+-------------------------
+#908946 by sun: Fixed module update functions.
+#943008 by moonray: Fixed block_skinr_preprocess_hook_callback() never returning
+  alternate block hooks.
+#942292 by Jacine: Added Advanced Help support files.
+#917540 by Jacine: Added support for Form API #weight attribute.
+#908946 by sun: Partial clean up of Drupal 7 port.
+
