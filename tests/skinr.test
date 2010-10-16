@@ -1,0 +1,74 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Tests for the Skinr module.
+ */
+
+/**
+ * Tests basic module installation.
+ */
+class SkinrInstallationTestCase extends DrupalWebTestCase {
+  protected $profile = 'testing';
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Installation',
+      'description' => 'Tests basic module installation.',
+      'group' => 'Skinr',
+    );
+  }
+
+  function setUp() {
+    parent::setUp();
+  }
+
+  function testInstallation() {
+    $this->admin_user = $this->drupalCreateUser(array(
+      'access administration pages',
+      'administer modules',
+      'administer permissions',
+    ));
+    $this->drupalLogin($this->admin_user);
+
+    // Install the modules.
+    $edit = array(
+      'modules[Skinr][skinr][enable]' => TRUE,
+      'modules[Skinr][skinr_ui][enable]' => TRUE,
+    );
+    $this->drupalPost('admin/modules', $edit, t('Save configuration'));
+
+    // Grant permissions.
+    $edit = array(
+      DRUPAL_AUTHENTICATED_RID . '[administer skinr]' => TRUE,
+      DRUPAL_AUTHENTICATED_RID . '[access skinr]' => TRUE,
+      DRUPAL_AUTHENTICATED_RID . '[access skinr classes]' => TRUE,
+    );
+    $this->drupalPost('admin/people/permissions', $edit, t('Save permissions'));
+
+    // Verify that we are able to access Skinr's administration pages.
+    $this->drupalGet('admin/appearance/skinr');
+    $this->assertResponse(200);
+
+    // Uninstall the modules.
+    $edit = array(
+      'modules[Skinr][skinr_ui][enable]' => FALSE,
+    );
+    $this->drupalPost('admin/modules', $edit, t('Save configuration'));
+    $edit = array(
+      'modules[Skinr][skinr][enable]' => FALSE,
+    );
+    $this->drupalPost(NULL, $edit, t('Save configuration'));
+    $edit = array(
+      'uninstall[skinr]' => TRUE,
+      'uninstall[skinr_ui]' => TRUE,
+    );
+    $this->drupalPost('admin/modules/uninstall', $edit, t('Uninstall'));
+    $this->drupalPost(NULL, array(), t('Uninstall'));
+
+    // Verify that no system variables are left.
+    $count = db_query("SELECT 1 FROM {variable} WHERE name LIKE 'skinr_*'")->fetchField();
+    $this->assertEqual($count, 0, t('No variables found.'));
+  }
+}

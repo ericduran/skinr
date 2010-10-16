@@ -181,19 +181,69 @@ function skinr_schema() {
 }
 
 /**
- * This old update is no longer required.
+ * Implementation of hook_uninstall().
  */
-function skinr_update_7000() {
+function skinr_uninstall() {
+  // Remove all skinr variables.
+  db_delete('variable')
+    ->condition('name', 'skinr_%', 'LIKE')
+    ->execute();
 }
 
 /**
- * Install new skinr table and convert old variables to the new db system.
+ * Install new skinr tables and convert old variables to the new db system.
  */
 function skinr_update_7001() {
-  $ret = array();
-
-  // Install tables.
-  drupal_install_schema('skinr');
+  // Install skinr table.
+  if (!db_table_exists('skinr')) {
+    $schema['skinr'] = array(
+      'description' => 'Stores skinr data.',
+      'fields' => array(
+        'theme' => array(
+          'description' => 'The system name of the theme.',
+          'type' => 'varchar',
+          'length' => 64,
+          'not null' => TRUE,
+          'default' => '',
+        ),
+        'module' => array(
+          'description' => 'The module this skinr settings is for.',
+          'type' => 'varchar',
+          'length' => 64,
+          'not null' => TRUE,
+          'default' => '',
+        ),
+        'sid' => array(
+          'description' => 'A unique identifier for this skinr datum.',
+          'type' => 'varchar',
+          'length' => 128,
+          'not null' => TRUE,
+          'default' => '',
+        ),
+        'skins' => array(
+          'description' => 'The skins set for this datum.',
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => TRUE,
+          'serialize' => TRUE,
+        ),
+        'settings' => array(
+          'description' => 'Custom settings for this id.',
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => TRUE,
+          'serialize' => TRUE,
+        ),
+      ),
+      'primary key' => array('theme', 'module', 'sid'),
+      'indexes' => array(
+        'theme' => array('theme'),
+        'module' => array('module'),
+        'sid' => array('sid'),
+      ),
+    );
+    db_create_table($ret, 'skinr', $schema['skinr']);
+  }
 
   // Exclude variables that aren't theme settings (from skinr_ui).
   $exclude = array('skinr_overlay_width', 'skinr_overlay_height', 'skinr_overlay_autofit', 'skinr_overlay_draggable');
@@ -206,7 +256,7 @@ function skinr_update_7001() {
       $skinr = variable_get($variable->name, array());
       foreach ($skinr as $module => $sids) {
         foreach ($sids as $sid => $skins) {
-          $id = db_insert('skinr')
+          db_insert('skinr')
             ->fields(array(
               'theme' => $theme,
               'module' => $module,
@@ -222,37 +272,29 @@ function skinr_update_7001() {
       variable_del($variable->name);
     }
   }
-
-  return t('New Skinr tables have been created, and all old variables converted to the new db system.');
 }
 
 /**
  * Install a new field in {skinr_rules} table.
  */
 function skinr_update_7002() {
-  if (db_table_exists('skinr_rules')) {
-    $schema = array(
+  // @todo skinr_update_6001() contains additional field manipulations.
+
+  if (!db_field_exists('skinr_rules', 'rule_type')) {
+    db_add_field('skinr_rules', 'rule_type', array(
       'description' => 'The content type of this rule.',
       'type' => 'varchar',
       'length' => 128,
       'not null' => TRUE,
       'default' => '',
-    );
-
-    db_add_field('skinr_rules', 'rule_type', $schema);
+    ));
     db_update('skinr_rules')
-      ->fields(array(
-        'type' => 'page',
-      ))
+      ->fields(array('type' => 'page'))
       ->execute();
     db_update('skinr')
-      ->fields(array(
-        'module' => 'rules',
-      ))
+      ->fields(array('module' => 'rules'))
       ->condition('module', 'page')
       ->execute();
-
-    drupal_set_message("A type field has been added to Skinr's Rules table.");
   }
 }
 
@@ -260,17 +302,84 @@ function skinr_update_7002() {
  * Install the new {skinr_skinsets} and {skinr_skins} tables.
  */
 function skinr_update_7003() {
-  if (!db_table_exists('skinr_skinsets') || !db_table_exists('skinr_skins')) {
-    $schema = drupal_get_schema_unprocessed('skinr');
-    _drupal_schema_initialize($schema, 'skinr');
-    
-    if (!db_table_exists('skinr_skinsets')) {
-      db_create_table('skinr_skinsets', $schema['skinr_skinsets']);
-      drupal_set_message("The table {skinr_skinsets} has been created.");
-    }
-    if (!db_table_exists('skinr_skins')) {
-      db_create_table('skinr_skins', $schema['skinr_skins']);
-      drupal_set_message("The table {skinr_skinsets} has been created.");
-    }
+  if (!db_table_exists('skinr_skinsets')) {
+    $schema['skinr_skinsets'] = array(
+      'description' => "A list of all non-theme skinsets that are or have been installed in Drupal's file system.",
+      'fields' => array(
+        'filename' => array(
+          'description' => 'The path of the primary file for this item, relative to the Drupal root; e.g. skins/skinset/skinset.info.',
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => TRUE,
+          'default' => '',
+        ),
+        'name' => array(
+          'description' => 'The name of the item; e.g. skinset.',
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => TRUE,
+          'default' => '',
+        ),
+        'status' => array(
+          'description' => 'Boolean indicating whether or not this item is enabled.',
+          'type' => 'int',
+          'not null' => TRUE,
+          'default' => 0,
+        ),
+        'info' => array(
+          'description' => "A serialized array containing information from the skinset's .info file; keys can include name, description, package, version, core, and skinr.",
+          'type' => 'text',
+          'not null' => FALSE,
+          'serialize' => TRUE,
+        ),
+      ),
+      'primary key' => array('filename'),
+      'indexes' => array(
+        'name' => array('name'),
+      ),
+    );
+    db_create_table('skinr_skinsets', $schema['skinr_skinsets']);
+  }
+
+  if (!db_table_exists('skinr_skins')) {
+    $schema['skinr_skins'] = array(
+      'description' => 'Keeps track of the whether a skin is enabled for a specific skinset and theme.',
+      'fields' => array(
+        'name' => array(
+          'description' => 'The name of the skinset or theme that this skin belongs to.',
+          'type' => 'varchar',
+          'length' => 64,
+          'not null' => TRUE,
+          'default' => '',
+        ),
+        'type' => array(
+          'description' => 'The type of this item; skinset or theme.',
+          'type' => 'varchar',
+          'length' => 16,
+          'not null' => TRUE,
+          'default' => '',
+        ),
+        'skin' => array(
+          'description' => 'The name of the skin which you are saving settings for.',
+          'type' => 'varchar',
+          'length' => 128,
+          'not null' => TRUE,
+          'default' => '',
+        ),
+        'status' => array(
+          'description' => 'A serialized array of values for each theme indicating whether or not the skin is enabled.',
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => TRUE,
+          'serialize' => TRUE,
+          ),
+      ),
+      'primary key' => array('name', 'skin'),
+      'indexes' => array(
+        'name' => array('name'),
+        'skin' => array('skin'),
+      ),
+    );
+    db_create_table('skinr_skins', $schema['skinr_skins']);
   }
 }

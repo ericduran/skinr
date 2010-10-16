@@ -13,3 +13,4 @@ files[] = modules/node.skinr.inc
 files[] = modules/panels.skinr.inc
 files[] = modules/skinr.skinr.inc
 files[] = modules/views.skinr.inc
+files[] = tests/skinr.test
