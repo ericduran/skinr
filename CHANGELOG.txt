@@ -5,3 +5,4 @@ Skinr 7.x-2.x, 2010-10-14
 by Sun:     #908946 - Partial clean up of Drupal 7 port.
 by Jacine:  #917540 - Added Support the FAPI #weight attribute.
 by Jacine:  #942292 - Adding Advanced Help needs to 7.x branch.
+by moonray: #943008 - Fix for block_skinr_preprocess_hook_callback() never returning alternate block hooks.
